@@ -23,11 +23,11 @@ const OriginalView = lazy(async () => ({
 }));
 
 const TAB_INFO: Record<ResultTab, { key: MessageKey; icon: IconName }> = {
-  points: { key: 'tabPoints', icon: 'document' },
+  points: { key: 'tabPoints', icon: 'layers' },
   whatif: { key: 'tabWhatIf', icon: 'branch' },
-  ask: { key: 'tabAsk', icon: 'help' },
-  next: { key: 'tabNext', icon: 'check' },
-  original: { key: 'tabOriginal', icon: 'paste' },
+  ask: { key: 'tabAsk', icon: 'chat' },
+  next: { key: 'tabNext', icon: 'checkCircle' },
+  original: { key: 'tabOriginal', icon: 'document' },
 };
 
 export function ResultScreen({
@@ -71,12 +71,14 @@ export function ResultScreen({
 
   if (analysis.category === 'not-legal') {
     return (
-      <Overview
-        document={document}
-        perspective={null}
-        onPerspectiveChange={() => undefined}
-        headingRef={headingRef}
-      />
+      <div className="result screen">
+        <Overview
+          document={document}
+          perspective={null}
+          onPerspectiveChange={() => undefined}
+          headingRef={headingRef}
+        />
+      </div>
     );
   }
 
@@ -105,7 +107,7 @@ export function ResultScreen({
   );
 
   return (
-    <div className="result stack">
+    <div className="result screen">
       <Overview
         document={document}
         perspective={state.perspective}
@@ -130,17 +132,18 @@ export function ResultScreen({
             onClick={() => dispatch({ type: 'setTab', tab })}
             onKeyDown={onTabKeyDown}
           >
-            <Icon name={TAB_INFO[tab].icon} />
-            {t(TAB_INFO[tab].key)}
+            <Icon name={TAB_INFO[tab].icon} className="tabs__icon" />
+            <span className="tabs__label">{t(TAB_INFO[tab].key)}</span>
           </button>
         ))}
       </div>
 
       <div
         id={`${baseId}-panel`}
+        key={state.tab}
         role="tabpanel"
         aria-labelledby={`${baseId}-tab-${state.tab}`}
-        className="tabs__panel"
+        className="tabs__panel screen"
         tabIndex={-1}
       >
         <Suspense fallback={<Spinner />}>

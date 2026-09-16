@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
-const BUDGET_BYTES = { js: 110_000, css: 8_000 };
+const BUDGET_BYTES = { js: 110_000, css: 14_000 };
 const dist = 'dist';
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
 const entryFiles = [...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.(js|css))"/g)].map(

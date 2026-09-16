@@ -2,13 +2,14 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { LANGUAGE_INFO, UI_LANGUAGES, isUiLanguage } from '../../shared/languages';
 import { api } from '../api/client';
 import { Icon } from '../components/Icon';
-import { SpeechProvider } from '../hooks/speech';
-import { I18nProvider, useI18n } from '../i18n/I18nProvider';
-import { useSettings } from '../settings/SettingsProvider';
+import { Logo } from '../components/Logo';
+import { Spinner } from '../components/ui';
 import { InputScreen } from '../features/input/InputScreen';
 import { LanguageWelcome } from '../features/welcome/LanguageWelcome';
 import { WorkingScreen } from '../features/working/WorkingScreen';
-import { Spinner } from '../components/ui';
+import { SpeechProvider } from '../hooks/speech';
+import { I18nProvider, useI18n } from '../i18n/I18nProvider';
+import { useSettings } from '../settings/SettingsProvider';
 import { useDocumentFlow } from './useDocumentFlow';
 
 // The result experience is the largest part of the UI; load it only once there is a result.
@@ -32,44 +33,55 @@ function useAiAvailability(): boolean | null {
   return available;
 }
 
-function Header({ onStartOver }: { onStartOver: (() => void) | null }) {
+function Header({
+  onStartOver,
+  showLanguage,
+}: {
+  onStartOver: (() => void) | null;
+  showLanguage: boolean;
+}) {
   const { t, language } = useI18n();
   const { setUiLanguage } = useSettings();
   return (
     <header className="site-header no-print">
       <div className="site-header__inner">
-        <p className="brand">
-          <Icon name="scale" className="brand__icon" />
-          <span className="brand__name">{t('appName')}</span>
-        </p>
+        <div className="brand">
+          <Logo size={40} className="brand__logo" />
+          <span className="brand__text">
+            <span className="brand__name">{t('appName')}</span>
+            <span className="brand__tagline">{t('brandTagline')}</span>
+          </span>
+        </div>
         <div className="site-header__actions">
           {onStartOver && (
             <button
               type="button"
-              className="button button--ghost button--small"
+              className="button button--ghost button--small header-button"
               onClick={onStartOver}
               aria-label={t('startOver')}
             >
               <Icon name="refresh" />
-              <span>{t('startOver')}</span>
+              <span className="header-button__label">{t('startOver')}</span>
             </button>
           )}
-          <label className="language-select">
-            <Icon name="globe" />
-            <span className="visually-hidden">{t('uiLanguageLabel')}</span>
-            <select
-              value={language}
-              onChange={(event) => {
-                if (isUiLanguage(event.target.value)) setUiLanguage(event.target.value);
-              }}
-            >
-              {UI_LANGUAGES.map((option) => (
-                <option key={option} value={option} lang={option}>
-                  {LANGUAGE_INFO[option].nativeName}
-                </option>
-              ))}
-            </select>
-          </label>
+          {showLanguage && (
+            <label className="language-select">
+              <Icon name="globe" />
+              <span className="visually-hidden">{t('uiLanguageLabel')}</span>
+              <select
+                value={language}
+                onChange={(event) => {
+                  if (isUiLanguage(event.target.value)) setUiLanguage(event.target.value);
+                }}
+              >
+                {UI_LANGUAGES.map((option) => (
+                  <option key={option} value={option} lang={option}>
+                    {LANGUAGE_INFO[option].nativeName}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       </div>
     </header>
@@ -80,13 +92,19 @@ function Footer() {
   const { t } = useI18n();
   return (
     <footer className="site-footer">
-      <p>
-        <Icon name="shield" /> <strong>{t('disclaimerShort')}</strong>
-      </p>
-      <p className="muted small">{t('disclaimerFull')}</p>
-      <p className="muted small">
-        <Icon name="lock" /> {t('footerPrivacy')}
-      </p>
+      <div className="site-footer__inner">
+        <div className="site-footer__brand">
+          <Logo size={32} />
+          <span>{t('appName')}</span>
+        </div>
+        <p className="site-footer__disclaimer">
+          <Icon name="shield" /> <strong>{t('disclaimerShort')}</strong>
+        </p>
+        <p className="site-footer__note">{t('disclaimerFull')}</p>
+        <p className="site-footer__note">
+          <Icon name="lock" /> {t('footerPrivacy')}
+        </p>
+      </div>
     </footer>
   );
 }
@@ -99,8 +117,8 @@ function Journey() {
 
   return (
     <>
-      <Header onStartOver={state.stage === 'input' ? null : flow.reset} />
-      <main id="main" className="page" tabIndex={-1}>
+      <Header onStartOver={state.stage === 'input' ? null : flow.reset} showLanguage />
+      <main id="main" className={`page page--${state.stage}`} tabIndex={-1}>
         {state.stage === 'input' && (
           <InputScreen
             aiAvailable={aiAvailable}
@@ -125,31 +143,34 @@ function Journey() {
   );
 }
 
-export function App() {
-  const { uiLanguage, setUiLanguage } = useSettings();
-  const language = uiLanguage ?? 'en';
-
-  return (
-    <I18nProvider language={language}>
-      <SpeechProvider>
-        <SkipLink />
-        {uiLanguage === null ? (
-          <main id="main" className="page page--welcome" tabIndex={-1}>
-            <LanguageWelcome onChoose={setUiLanguage} />
-          </main>
-        ) : (
-          <Journey />
-        )}
-      </SpeechProvider>
-    </I18nProvider>
-  );
-}
-
 function SkipLink() {
   const { t } = useI18n();
   return (
     <a className="skip-link" href="#main">
       {t('skipToContent')}
     </a>
+  );
+}
+
+export function App() {
+  const { uiLanguage, setUiLanguage } = useSettings();
+
+  return (
+    <I18nProvider language={uiLanguage ?? 'en'}>
+      <SpeechProvider>
+        <SkipLink />
+        <div className="backdrop" aria-hidden="true" />
+        {uiLanguage === null ? (
+          <>
+            <Header onStartOver={null} showLanguage={false} />
+            <main id="main" className="page page--welcome" tabIndex={-1}>
+              <LanguageWelcome onChoose={setUiLanguage} />
+            </main>
+          </>
+        ) : (
+          <Journey />
+        )}
+      </SpeechProvider>
+    </I18nProvider>
   );
 }

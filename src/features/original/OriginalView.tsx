@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { VerifiedPoint } from '../../../shared/schema';
 import { locateQuote, prepareSource } from '../../../shared/verifyQuote';
+import { Icon } from '../../components/Icon';
 import { useI18n } from '../../i18n/I18nProvider';
 import { detectScriptLanguage } from '../../lib/browser';
 
@@ -19,12 +20,15 @@ export function OriginalView({ text, point }: { text: string; point: VerifiedPoi
   }, [range]);
 
   return (
-    <section className="original stack" aria-labelledby="original-heading">
-      <h2 id="original-heading" className="card__title">
+    <section className="original" aria-labelledby="original-heading">
+      <h2 id="original-heading" className="panel__title">
+        <span className="panel__icon panel__icon--indigo">
+          <Icon name="lock" />
+        </span>
         {t('originalHeading')}
       </h2>
       {range && <p className="muted small">{t('originalHint')}</p>}
-      <div className="original__text card" lang={detectScriptLanguage(text)}>
+      <div className="paper" lang={detectScriptLanguage(text)}>
         {range ? (
           <>
             {text.slice(0, range.start)}

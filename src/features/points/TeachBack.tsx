@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import type { ExplanationLanguage } from '../../../shared/languages';
 import type { TeachBack as TeachBackCheck } from '../../../shared/schema';
-import { Icon } from '../../components/Icon';
-import { Notice } from '../../components/ui';
+import { Icon, type IconName } from '../../components/Icon';
 import { useI18n } from '../../i18n/I18nProvider';
+import type { MessageKey } from '../../i18n/messages/en';
 import type { CheckOutcome } from '../../lib/brief';
 
 export type TeachBackAnswer = 'yes' | 'no' | 'unsure';
@@ -14,6 +15,12 @@ export function evaluateAnswer(
   if (answer === 'unsure') return 'unsure';
   return answer === correct ? 'correct' : 'wrong';
 }
+
+const ANSWERS: readonly { answer: TeachBackAnswer; key: MessageKey; icon: IconName }[] = [
+  { answer: 'yes', key: 'answerYes', icon: 'check' },
+  { answer: 'no', key: 'answerNo', icon: 'ban' },
+  { answer: 'unsure', key: 'answerNotSure', icon: 'help' },
+];
 
 /**
  * "Did you get it?" — the teach-back method from health literacy, applied to legal
@@ -36,48 +43,55 @@ export function TeachBack({
   onAnswer: (outcome: CheckOutcome) => void;
 }) {
   const { t } = useI18n();
+  const [chosen, setChosen] = useState<TeachBackAnswer | null>(null);
   const labelId = `${pointId}-check`;
-  const answers: readonly [TeachBackAnswer, string][] = [
-    ['yes', t('answerYes')],
-    ['no', t('answerNo')],
-    ['unsure', t('answerNotSure')],
-  ];
 
   return (
-    <div className="teach-back">
-      <h3 id={labelId} className="teach-back__heading">
-        <Icon name="help" /> {t('checkHeading')}
+    <div className={`quiz${outcome ? ` quiz--${outcome}` : ''}`}>
+      <h3 id={labelId} className="quiz__heading">
+        <span className="quiz__badge">
+          <Icon name="sparkle" />
+        </span>
+        {t('checkHeading')}
       </h3>
-      <p className="teach-back__question" lang={language}>
+      <p className="quiz__question" lang={language}>
         {check.question}
       </p>
-      <div className="button-row" role="group" aria-labelledby={labelId}>
-        {answers.map(([answer, label]) => (
+      <div className="quiz__answers" role="group" aria-labelledby={labelId}>
+        {ANSWERS.map(({ answer, key, icon }) => (
           <button
             key={answer}
             type="button"
-            className="button button--secondary"
-            onClick={() => onAnswer(evaluateAnswer(answer, check.answer))}
+            className={`quiz__answer quiz__answer--${answer}`}
+            aria-pressed={chosen === answer}
+            onClick={() => {
+              setChosen(answer);
+              onAnswer(evaluateAnswer(answer, check.answer));
+            }}
           >
-            {label}
+            <Icon name={icon} /> {t(key)}
           </button>
         ))}
       </div>
       {outcome === 'correct' && (
-        <Notice tone="success" title={t('checkCorrect')}>
+        <div className="quiz__feedback quiz__feedback--correct" role="status">
+          <p className="quiz__feedback-title">
+            <Icon name="checkCircle" /> {t('checkCorrect')}
+          </p>
           <p lang={language}>{check.explanation}</p>
-        </Notice>
+        </div>
       )}
       {(outcome === 'wrong' || outcome === 'unsure') && (
-        <Notice
-          tone="warning"
-          icon="refresh"
-          title={t(outcome === 'wrong' ? 'checkWrong' : 'checkUnsure')}
-        >
+        <div className="quiz__feedback quiz__feedback--retry" role="status">
+          <p className="quiz__feedback-title">
+            <Icon name="refresh" /> {t(outcome === 'wrong' ? 'checkWrong' : 'checkUnsure')}
+          </p>
           <p lang={language}>{simple}</p>
           <p lang={language}>{check.explanation}</p>
-          <p className="small">{t('checkAddedToBrief')}</p>
-        </Notice>
+          <p className="small">
+            <Icon name="help" /> {t('checkAddedToBrief')}
+          </p>
+        </div>
       )}
     </div>
   );

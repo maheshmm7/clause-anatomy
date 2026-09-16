@@ -20,19 +20,22 @@ export function ConsentPanel({
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
 
   return (
-    <section className="card consent stack" aria-labelledby="consent-title">
+    <section className="consent screen" aria-labelledby="consent-title">
+      <div className="consent__badge">
+        <Icon name="shieldCheck" />
+      </div>
       <h1 id="consent-title" ref={headingRef} tabIndex={-1}>
-        <Icon name="shield" /> {t('consentTitle')}
+        {t('consentTitle')}
       </h1>
       {pending.previewUrl ? (
         <img className="consent__preview" src={pending.previewUrl} alt={t('photoPreviewAlt')} />
       ) : (
-        <p className="muted">
+        <p className="consent__file">
           <Icon name="document" /> {t('selectedFile', { name: pending.fileName })}
         </p>
       )}
-      <p>{t('consentBody')}</p>
-      <div className="button-row">
+      <p className="consent__body">{t('consentBody')}</p>
+      <div className="button-row button-row--center">
         <button
           type="button"
           className="button button--primary button--large"

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { AnalysisResult, ScenarioOutcome } from '../../../shared/schema';
 import { walkScenario, type ScenarioAnswer } from '../../../shared/scenario';
-import { Icon } from '../../components/Icon';
-import { Notice, SpeakButton, type Tone } from '../../components/ui';
+import { Icon, type IconName } from '../../components/Icon';
+import { SpeakButton } from '../../components/ui';
 import { useFocusOnChange } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/messages/en';
 
-const OUTCOME_STYLE: Record<ScenarioOutcome['tone'], { tone: Tone; key: MessageKey }> = {
-  good: { tone: 'success', key: 'toneGood' },
-  caution: { tone: 'warning', key: 'toneCaution' },
-  bad: { tone: 'danger', key: 'toneBad' },
+const OUTCOME_STYLE: Record<ScenarioOutcome['tone'], { key: MessageKey; icon: IconName }> = {
+  good: { key: 'toneGood', icon: 'checkCircle' },
+  caution: { key: 'toneCaution', icon: 'alert' },
+  bad: { key: 'toneBad', icon: 'ban' },
 };
 
 /**
@@ -33,7 +33,7 @@ export function WhatIfView({
 
   const scenario =
     analysis.scenarios.find((candidate) => candidate.id === scenarioId) ?? analysis.scenarios[0];
-  if (!scenario) return <p className="muted">{t('whatIfNone')}</p>;
+  if (!scenario) return <p className="empty-state">{t('whatIfNone')}</p>;
 
   const step = walkScenario(scenario, answers);
   const trail = answers.map((answer, depth) => {
@@ -47,35 +47,38 @@ export function WhatIfView({
   };
 
   return (
-    <div className="whatif stack">
+    <div className="whatif">
       <p className="lead">{t('whatIfIntro')}</p>
 
       <fieldset className="choice-group">
         <legend>{t('whatIfPick')}</legend>
-        <div className="choice-group__options choice-group__options--stacked">
+        <div className="scenario-cards">
           {analysis.scenarios.map((candidate) => (
-            <label key={candidate.id} className="choice">
+            <label key={candidate.id} className="scenario-card">
               <input
                 type="radio"
                 name="whatif-scenario"
                 checked={candidate.id === scenario.id}
                 onChange={() => choose(candidate.id)}
               />
+              <Icon name="branch" />
               <span lang={language}>{candidate.title}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
-      <section className="card stack" aria-live="polite">
+      <section className="flow card" aria-live="polite">
         {trail.length > 0 && (
           <div>
             <h2 className="section-label">{t('yourAnswers')}</h2>
-            <ol className="trail">
+            <ol className="flow__trail">
               {trail.map((item, depth) => (
-                <li key={depth}>
-                  <span lang={language}>{item.question}</span>{' '}
-                  <strong>{item.answer === 'yes' ? t('answerYes') : t('answerNo')}</strong>
+                <li key={depth} className="flow__node flow__node--done">
+                  <span lang={language}>{item.question}</span>
+                  <span className={`answer-pill answer-pill--${item.answer}`}>
+                    {item.answer === 'yes' ? t('answerYes') : t('answerNo')}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -83,64 +86,67 @@ export function WhatIfView({
         )}
 
         {step.kind === 'question' ? (
-          <>
+          <div className="flow__current">
             <p className="section-label">{t('questionNumber', { n: step.depth + 1 })}</p>
-            <h2 ref={stepRef} tabIndex={-1} className="whatif__question" lang={language}>
+            <h2 ref={stepRef} tabIndex={-1} className="flow__question" lang={language}>
               {step.node.question}
             </h2>
-            <div className="button-row">
+            <div className="flow__answers">
               <button
                 type="button"
-                className="button button--primary button--large"
+                className="big-answer big-answer--yes"
                 onClick={() => setAnswers([...answers, 'yes'])}
               >
-                {t('answerYes')}
+                <Icon name="check" /> {t('answerYes')}
               </button>
               <button
                 type="button"
-                className="button button--primary button--large"
+                className="big-answer big-answer--no"
                 onClick={() => setAnswers([...answers, 'no'])}
               >
-                {t('answerNo')}
+                <Icon name="ban" /> {t('answerNo')}
               </button>
             </div>
-          </>
+          </div>
         ) : (
-          <>
+          <div className={`outcome outcome--${step.outcome.tone}`}>
             <h2 ref={stepRef} tabIndex={-1} className="section-label">
               {t('outcomeHeading')}
             </h2>
-            <Notice
-              tone={OUTCOME_STYLE[step.outcome.tone].tone}
-              title={t(OUTCOME_STYLE[step.outcome.tone].key)}
-            >
-              <p lang={language}>{step.outcome.text}</p>
-            </Notice>
+            <p className="outcome__tone">
+              <span className="outcome__icon">
+                <Icon name={OUTCOME_STYLE[step.outcome.tone].icon} />
+              </span>
+              {t(OUTCOME_STYLE[step.outcome.tone].key)}
+            </p>
+            <p className="outcome__text" lang={language}>
+              {step.outcome.text}
+            </p>
             <SpeakButton
               id={`outcome-${scenario.id}`}
               text={step.outcome.text}
               language={language}
             />
             {step.outcome.pointIds.length > 0 && (
-              <div>
+              <div className="related">
                 <p className="section-label">{t('basedOn')}</p>
                 <ul className="related__list">
                   {step.outcome.pointIds.map((id) => (
                     <li key={id}>
                       <button
                         type="button"
-                        className="button button--link"
+                        className="related__link"
                         onClick={() => onOpenPoint(id)}
                         lang={language}
                       >
-                        <Icon name="arrowRight" /> {titles.get(id) ?? id}
+                        {titles.get(id) ?? id} <Icon name="arrowRight" />
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {answers.length > 0 && (

@@ -5,7 +5,6 @@
  */
 export const en = {
   appName: 'Clause Anatomy',
-  tagline: 'Understand your legal papers, one simple step at a time.',
   skipToContent: 'Skip to main content',
   startOver: 'Start over',
   uiLanguageLabel: 'App language',
@@ -100,9 +99,6 @@ export const en = {
   noticeIfIgnored: 'If you ignore it',
   perspectiveQuestion: 'Who are you in this paper?',
   perspectiveNone: 'Just reading',
-  attentionCount: '{count} points need your attention',
-  attentionNone: 'Nothing is marked risky for you',
-  nextDate: 'Next date: {date}',
   readingLevel: 'Explanation style',
   levelSimple: 'Simple',
   levelDetailed: 'Detailed',
@@ -217,6 +213,33 @@ export const en = {
 
   originalHeading: 'Your paper (private numbers hidden)',
   originalHint: 'The highlighted words are the part the selected point comes from.',
+
+  brandTagline: 'Legal papers in plain words',
+  heroEyebrow: 'Free · Private · Made for India',
+  trustPrivate: 'Private numbers hidden',
+  trustVerified: 'Every point checked against your paper',
+  trustLanguages: '10 Indian languages, read aloud',
+  dropHint: 'or drop a file here',
+  previewCaption: 'How one hard sentence becomes clear',
+  previewMustNot: 'Rent the flat to someone else',
+  previewUnless: 'The owner agrees in writing first',
+  previewBroken: 'You lose your deposit',
+  howTitle: 'How it works',
+  howStep1: 'Add your paper',
+  howStep1Hint: 'Photo, PDF or text',
+  howStep2: 'Private numbers are hidden',
+  howStep2Hint: 'Before anything is sent',
+  howStep3: 'Understand and check',
+  howStep3Hint: 'Simple points, quick quizzes, next steps',
+  statPoints: 'Key points',
+  statAttention: 'Need your attention',
+  statVerified: 'Found in your paper',
+  statNextDate: 'Next date',
+  goToPoint: 'Go to point {n}: {title}',
+  termsHint: 'Tap a word to see what it means',
+  askSuggestions: 'Try asking',
+  checklistHint: 'Tick items as you finish them',
+  understoodLabel: 'Understood',
 } as const;
 
 export type MessageKey = keyof typeof en;
