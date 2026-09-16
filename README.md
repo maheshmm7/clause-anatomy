@@ -1,0 +1,168 @@
+# Clause Anatomy ⚖️
+
+**Understand any everyday legal paper — clause by clause, in your own language — and prove to yourself that you understood it.**
+
+Built for **Google PromptWars · Challenge vertical: _AI for Legal Assistance & Access_**, powered by **Google Gemini**.
+
+> Clause Anatomy explains legal papers in simple words. It is **not a lawyer** and does **not** give legal advice. AI can make mistakes: always check the original paper and talk to a lawyer or free legal aid (India: **NALSA 15100**) before important decisions.
+
+---
+
+## 1. The problem
+
+Legal papers are written for lawyers. A tenant, a new employee or someone holding a legal notice sees _"Notwithstanding anything contained in Clause 9, the Lessee shall not sublet… failing which the security deposit shall stand forfeited"_ and cannot tell **who must do what, unless what, or what happens if they don't**. Summaries hide those details; chatbots answer only the questions people already know to ask. People who most need help — limited literacy, not fluent in English, only a phone — are the least served.
+
+## 2. Our approach: explain the _structure_, then check understanding
+
+Most "legal AI" tools summarise. Clause Anatomy does four things differently:
+
+| #   | Idea                                | What the reader sees                                                                                                                                                                                                                                                                               |
+| --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Clause anatomy**                  | Every important clause is broken into colour + icon + word coded parts: **You must / You must not / You may / Unless / If broken / Time limit**, plus the verbatim quote it came from.                                                                                                             |
+| 2   | **Teach-back ("Did you get it?")**  | Borrowed from health literacy: a real-life Yes/No question after each important point. A wrong or "Not sure" answer re-explains it more simply and adds it to the questions for a lawyer.                                                                                                          |
+| 3   | **Deterministic what-if simulator** | "What if I want to leave early?" becomes a small Yes/No decision tree. The AI proposes the tree; **plain, tested code** validates it (no cycles, no dangling links, only verified points) and walks it — same answers, same outcome, every time.                                                   |
+| 4   | **Grounding you can see**           | Every point carries an exact quote. The server **verifies each quote against the document**; unverified points are clearly marked and never quizzed. Term meanings are badged _From your paper_ or _General information — check with a lawyer_. "Show in original" highlights the source sentence. |
+
+And around the core:
+
+- **Who are you in this paper?** Pick _Tenant_ or _Landlord_: every rule is relabelled ("You must…"), risks are flagged from _your_ side, and a personal duties checklist is built — with no extra AI call.
+- **Next steps**: personal checklist, important dates (**add to calendar** as `.ics`), and a **lawyer-ready brief** (copy / share on WhatsApp / print) that includes what the reader did not understand and questions the paper could not answer.
+- **Ask about your paper**: typed or **spoken** questions; answers are labelled _from your paper_, _general information_ or _needs a lawyer_, with verified quotes.
+- **Notices & urgent papers**: legal notices get a _Who sent it / What they claim / What they want / By when / If ignored_ summary. A deterministic safety net raises urgency for warrants, summons or eviction (English, Hindi, Telugu) and shows **free legal aid (15100)** with tap-to-call.
+- **Honest scope**: papers that are not legal documents are recognised and explained as such; court papers are explained but pointed to a lawyer.
+
+## 3. Designed for every reader
+
+- **Language first**: the first screen shows languages in their own scripts. The **whole interface** is available in **English, हिन्दी and తెలుగు**; explanations are available in **10 Indian languages** (English, Hindi, Telugu, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi).
+- **Low-literacy friendly**: one point at a time on phones, short sentences, a _Simple / Detailed_ switch, icons **and** words (never colour alone), tap-to-answer checks, and **read-aloud** on every explanation (browser speech, no audio sent to our server).
+- **Photo first**: most people have a paper, not a PDF. Take a photo, upload a PDF/photo/text file, paste text, or try a built-in example.
+- **Responsive and adaptive**: mobile-first layout tested at phone (Pixel 7), tablet (820×1180) and desktop (1440×900); safe-area insets, 48 px touch targets, light/dark themes, reduced-motion and forced-colours support, print styles for the brief.
+- **Accessible**: semantic landmarks, skip link, WAI-ARIA tabs with arrow-key navigation, focus management between screens, `lang` attributes on every piece of mixed-language content, live regions for progress. Verified with **axe-core** in unit tests and in real Chrome (WCAG 2.2 AA, including contrast, light and dark).
+
+## 4. How it works
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    A[Photo / PDF / text / example] --> B{Text layer?}
+    B -- digital PDF / text --> C[pdf.js reads on device]
+    B -- photo / scan --> D[Compress on device + ask consent]
+    C --> E[Redact Aadhaar, PAN, phone, email, card, bank, passport, voter ID]
+    E --> F[API: /api/analyze]
+    D --> G[API: /api/extract]
+    G --> E
+    F --> H[Clause anatomy · teach-back · what-if · brief]
+  end
+  subgraph Server [Node + Express]
+    F --> S1[Validate with Zod · rate limit · redact again]
+    G --> S0[Magic-byte file check]
+    S1 --> S2[Gemini: structured JSON output]
+    S0 --> S2
+    S2 --> S3[Validate reply · verify every quote · sanitise what-if trees · urgency safety net]
+    S3 --> H
+  end
+```
+
+1. **Read** — text files and digital PDFs are read _on the device_ (pdf.js is lazy-loaded only when a PDF is chosen). Photos are resized and compressed on the device; before a photo or scan is sent for transcription the reader is told, in plain words, that pictures cannot be redacted first, and must agree.
+2. **Protect** — personal identifiers are redacted in the browser **and again on the server** (defence in depth). Nothing is stored; responses are `Cache-Control: no-store`.
+3. **Explain** — Gemini returns JSON constrained by a schema generated from the same Zod schema the server validates against (one source of truth). The document is fenced with a random per-request boundary and the prompt treats it as untrusted data (prompt-injection defence).
+4. **Verify** — the server checks every quote against the document (normalised exact match → ordered ellipsis segments → ≥ 90 % word-window match), removes teach-back questions from unverified points, downgrades ungrounded term sources, renumbers ids, drops impossible dates and rejects invalid what-if trees.
+5. **Personalise** — perspective, reading level, checklists, calendar files and the lawyer brief are all computed in the browser from the verified result.
+
+### Architecture
+
+```
+shared/          Pure TypeScript used by browser AND server (~98 % line coverage)
+  schema.ts        Zod schemas: AI output, API contracts (single source of truth)
+  redact.ts        Indian PII redaction (ASCII, Devanagari and Telugu digits; Luhn for cards)
+  verifyQuote.ts   Grounding check with offsets for highlighting
+  scenario.ts      What-if tree validation and deterministic walker
+  urgency.ts       Multilingual urgency safety net
+server/          Express 5 API (dependency-injected, runs locally, on Node or serverless)
+  ai/              Gemini client (timeouts, retries, safe error mapping), prompts, schema adapter
+  services/        analyze / answer / extract + post-processing of model output
+  middleware/      Helmet CSP, rate limiting, body validation, error handling
+api/index.ts     Serverless entry (e.g. Vercel)
+src/             React 19 UI
+  app/             State machine (reducer) and orchestration hook
+  features/        welcome · input · working · result · points · whatif · ask · next · original
+  i18n/            Typed dictionaries (missing translation = build error)
+  samples/         Pre-computed, schema-validated examples (work without an API key)
+e2e/             Playwright tests in real Chrome at phone, tablet and desktop sizes
+```
+
+## 5. Evaluation focus areas
+
+| Area                            | What we did                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Code quality**                | Strict TypeScript (`noUncheckedIndexedAccess`), ESLint (typescript-eslint strict, react-hooks, jsx-a11y strict), Prettier, pure functions for all logic, dependency injection for the AI client, reducers for UI state, one schema source of truth, typed i18n.                                                                                                                                                                          |
+| **Security**                    | API key only on the server; strict CSP and Helmet headers; `no-store` caching; per-IP rate limiting; strict Zod validation (unknown fields rejected, size limits per route); magic-byte file validation; PII redaction on client and server; prompt-injection fencing; model output validated and clipped; errors never leak internals; logs never contain documents; secret scan and `npm audit` in CI. See [SECURITY.md](SECURITY.md). |
+| **Efficiency**                  | Code-split UI (result views, examples, pdf.js and schema validation load on demand); entry bundle budget enforced in CI; on-device text extraction and image compression; in-memory cache of analyses (SHA-256 key) so the same paper never costs a second AI call; perspective, checklists, briefs and what-if walks computed locally; low thinking level and single structured call per analysis; gzip; immutable asset caching.       |
+| **Testing**                     | 170+ Vitest unit/integration tests (shared logic, server with a fake AI, UI journeys with axe) with coverage thresholds; Playwright end-to-end tests in real Chrome on mobile, tablet and desktop (journeys, keyboard-only, dark mode, Telugu, real PDF upload, photo consent, production security headers); examples validated by the same checks as live AI output.                                                                    |
+| **Accessibility**               | See section 3 — WCAG 2.2 AA verified with axe in jsdom and in Chrome (light and dark).                                                                                                                                                                                                                                                                                                                                                   |
+| **Problem statement alignment** | Understand (anatomy, terms, teach-back, reading level, languages), compare (perspective lens, duties of each side), navigate (linked clauses, what-if, show in original), next steps (checklist, dates, lawyer brief, legal aid) — with visible grounding and a clear "not a lawyer" boundary.                                                                                                                                           |
+
+## 6. Run it locally
+
+Requirements: **Node.js 20.19+** (22 LTS recommended) and a free **Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey). The built-in examples work without a key.
+
+```bash
+npm install
+cp .env.example .env        # then put your key in GEMINI_API_KEY
+npm run dev                 # http://localhost:5173 (UI + API on one origin)
+```
+
+Production build:
+
+```bash
+npm run build
+npm start                   # http://localhost:8787
+```
+
+### Environment variables
+
+| Variable         | Required    | Default            | Purpose                                                          |
+| ---------------- | ----------- | ------------------ | ---------------------------------------------------------------- |
+| `GEMINI_API_KEY` | for live AI | —                  | Gemini API key (server only, never sent to the browser)          |
+| `GEMINI_MODEL`   | no          | `gemini-3.6-flash` | Any stable Gemini model with JSON output and image understanding |
+| `PORT`           | no          | `8787`             | Port for `npm start`                                             |
+| `RATE_LIMIT_MAX` | no          | `30`               | AI requests per client IP per 10 minutes                         |
+| `AI_TIMEOUT_MS`  | no          | `120000`           | Hard timeout for each AI call                                    |
+
+### Quality commands
+
+```bash
+npm run verify        # typecheck + lint + secret scan + unit tests with coverage + build + bundle budget
+npm run test:e2e      # Playwright end-to-end tests (uses installed Chrome; set PLAYWRIGHT_CHANNEL=chromium to use Playwright's)
+npm run audit:deps    # production dependency audit
+```
+
+### Deploying
+
+The app is a static front-end plus one API. On **Vercel**, `vercel.json` builds the UI and serves `/api/*` from `api/index.ts`; set `GEMINI_API_KEY` in the project's environment variables. On any Node host (Render, Railway, Cloud Run…), run `npm run build && npm start`.
+
+## 7. Assumptions
+
+- Primary users are in **India**: Indian identifiers are redacted, Indian languages are supported, and legal aid contacts are Indian (NALSA helpline **15100**, emergency **112**).
+- Target documents are **everyday legal papers** people receive: rent/lease agreements, job offers, loan and insurance papers, app terms and privacy policies, legal and demand notices. Court papers are explained but routed to a lawyer.
+- Documents are up to about **60,000 characters** (≈ 25 pages); longer papers should be analysed in parts.
+- Readers may have **limited literacy** and use **low-end phones on slow networks**; the design favours short text, icons with words, voice and small downloads.
+- The built-in examples are **fictional**; any resemblance to real people is coincidental.
+
+## 8. Limitations
+
+- **Not legal advice.** Explanations can be wrong or incomplete even when quotes are verified; law also changes and varies by state.
+- Redaction is **pattern-based**: it hides structured numbers but **not names or addresses**. Photos and scans are read by the AI before redaction (the reader is asked for consent first).
+- Quote verification proves a quote **exists** in the paper, not that the explanation of it is correct.
+- "General information" about Acts and sections comes from the model's general knowledge and is labelled accordingly.
+- Read-aloud and voice questions depend on the voices and speech recognition available in the reader's browser.
+- Rate limiting is in-memory per server instance; a multi-instance deployment should use a shared store.
+- Interface translations (Hindi, Telugu) were written for this project and should be reviewed by native speakers before wide release.
+
+## 9. Responsible AI
+
+The model never tells a reader what to do; it describes what the paper says, options and consequences. Every claim is tied to visible evidence, uncertainty is shown rather than hidden, urgent situations surface free legal aid, and the app states on every screen that it is not a lawyer.
+
+## License
+
+[MIT](LICENSE)

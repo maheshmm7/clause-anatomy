@@ -1,0 +1,556 @@
+{
+  "category": "contract",
+  "documentType": "Rent agreement (renting a flat)",
+  "summary": "This is an 11-month agreement to rent Flat 302 in Gachibowli, Hyderabad. Priya Sharma (tenant) pays Rs. 22,000 a month to K. Srinivas Reddy (landlord).",
+  "parties": [
+    {
+      "id": "lessor",
+      "name": "Mr. K. Srinivas Reddy (Lessor)",
+      "role": "Landlord"
+    },
+    {
+      "id": "lessee",
+      "name": "Ms. Priya Sharma (Lessee)",
+      "role": "Tenant"
+    }
+  ],
+  "urgency": {
+    "level": "none",
+    "reason": ""
+  },
+  "points": [
+    {
+      "id": "p1",
+      "title": "Monthly rent and late fee",
+      "sourceLabel": "Clause 2",
+      "quote": "The Lessee shall pay a monthly rent of Rs. 22,000 (Rupees Twenty-Two Thousand only) on or before the 5th day of every English calendar month.",
+      "simple": "Pay Rs. 22,000 rent by the 5th of every month. Each day late costs Rs. 200 more.",
+      "detailed": "The tenant must pay Rs. 22,000 on or before the 5th of each month. If payment is late, the landlord can charge Rs. 200 for every day after the 5th.",
+      "importance": "high",
+      "favours": "lessor",
+      "rules": [
+        {
+          "partyId": "lessee",
+          "type": "must",
+          "action": "Pay Rs. 22,000 rent on or before the 5th of every month"
+        }
+      ],
+      "conditions": [],
+      "consequences": ["A late fee of Rs. 200 for each day after the 5th"],
+      "relatedPointIds": ["p3"],
+      "deadline": "By the 5th of every month",
+      "terms": [
+        {
+          "term": "calendar month",
+          "source": "document",
+          "meaning": "A normal month like August or September."
+        }
+      ],
+      "check": {
+        "question": "Your salary comes on the 7th, so you pay rent on the 7th. Will you have to pay extra?",
+        "answer": "yes",
+        "explanation": "Yes. Rent is due by the 5th, so 2 days late means Rs. 400 extra (Rs. 200 per day)."
+      },
+      "verified": true
+    },
+    {
+      "id": "p2",
+      "title": "The first 6 months are locked",
+      "sourceLabel": "Clause 7",
+      "quote": "If the Lessee vacates the Premises during the lock-in period, the Lessee shall pay rent for the remaining months of the lock-in period.",
+      "simple": "Nobody can end the agreement in the first 6 months. If you leave early, you still pay rent for those months.",
+      "detailed": "The first 6 months are a \"lock-in period\". Neither the tenant nor the landlord can end the agreement then. If the tenant moves out during these months, the tenant must still pay rent for the rest of the 6 months.",
+      "importance": "high",
+      "favours": "lessor",
+      "rules": [
+        {
+          "partyId": "lessee",
+          "type": "mustNot",
+          "action": "End the agreement during the first 6 months"
+        },
+        {
+          "partyId": "lessor",
+          "type": "mustNot",
+          "action": "End the agreement during the first 6 months"
+        }
+      ],
+      "conditions": ["Only applies to the first 6 months"],
+      "consequences": ["The tenant pays rent for the remaining months of the 6-month period"],
+      "relatedPointIds": ["p5"],
+      "deadline": "First 6 months of the agreement",
+      "terms": [
+        {
+          "term": "lock-in period",
+          "source": "document",
+          "meaning": "The first 6 months, when no one can end the agreement."
+        },
+        {
+          "term": "terminate",
+          "source": "document",
+          "meaning": "To end the agreement."
+        }
+      ],
+      "check": {
+        "question": "You get a job in another city after 4 months and move out. Do you still have to pay 2 more months of rent?",
+        "answer": "yes",
+        "explanation": "Yes. You left inside the 6-month lock-in, so you pay rent for the remaining 2 months."
+      },
+      "verified": true
+    },
+    {
+      "id": "p3",
+      "title": "Getting your deposit back",
+      "sourceLabel": "Clause 3",
+      "quote": "The deposit shall be refunded within 30 days of the Lessee vacating the Premises, after deducting any unpaid rent, unpaid utility bills and the cost of repairing damage beyond normal wear and tear.",
+      "simple": "Your Rs. 66,000 deposit comes back within 30 days after you move out. Unpaid rent, bills or real damage can be cut from it.",
+      "detailed": "The landlord must return the security deposit within 30 days of the tenant moving out. The landlord may first cut unpaid rent, unpaid electricity or water bills, and the cost of repairing damage that is more than normal use. No interest is paid on the deposit.",
+      "importance": "high",
+      "favours": "both",
+      "rules": [
+        {
+          "partyId": "lessor",
+          "type": "must",
+          "action": "Return the deposit within 30 days after the tenant moves out"
+        },
+        {
+          "partyId": "lessor",
+          "type": "may",
+          "action": "Cut unpaid rent, unpaid bills and repair costs for real damage from the deposit"
+        }
+      ],
+      "conditions": ["Only damage beyond normal wear and tear can be cut"],
+      "consequences": [],
+      "relatedPointIds": ["p4"],
+      "deadline": "Within 30 days after moving out",
+      "terms": [
+        {
+          "term": "interest-free",
+          "source": "document",
+          "meaning": "You do not get any extra money (interest) on your deposit."
+        },
+        {
+          "term": "wear and tear",
+          "source": "document",
+          "meaning": "Normal ageing from everyday use, like faded paint or small scratches."
+        }
+      ],
+      "check": {
+        "question": "When you leave, the wall paint has faded a little from normal use. Can the landlord cut money from your deposit for this?",
+        "answer": "no",
+        "explanation": "No. Fading from normal use is \"wear and tear\". Only damage beyond that can be cut."
+      },
+      "verified": true
+    },
+    {
+      "id": "p4",
+      "title": "Renting the flat to someone else",
+      "sourceLabel": "Clause 6",
+      "quote": "the Lessee shall not sublet, assign or part with the possession of the Premises or any part thereof without the prior written consent of the Lessor, failing which the security deposit shall stand forfeited.",
+      "simple": "Do not let someone else live in or rent the flat without the landlord agreeing in writing first. If you do, you lose your whole deposit.",
+      "detailed": "The tenant cannot sublet, hand over, or share possession of the flat unless the landlord has given written permission beforehand. This rule applies even if Clause 9 seems to say something else. Breaking it means the Rs. 66,000 deposit is lost.",
+      "importance": "high",
+      "favours": "lessor",
+      "rules": [
+        {
+          "partyId": "lessee",
+          "type": "mustNot",
+          "action": "Sublet or hand over the flat (or part of it) to someone else"
+        }
+      ],
+      "conditions": ["Unless the landlord agrees in writing, before it happens"],
+      "consequences": ["The whole security deposit is lost"],
+      "relatedPointIds": ["p5", "p3"],
+      "deadline": "",
+      "terms": [
+        {
+          "term": "Notwithstanding",
+          "source": "document",
+          "meaning": "\"Even if another clause says something different.\" This rule wins over Clause 9."
+        },
+        {
+          "term": "sublet",
+          "source": "document",
+          "meaning": "Renting out your rented home, or part of it, to another person."
+        },
+        {
+          "term": "forfeited",
+          "source": "document",
+          "meaning": "Taken away for good."
+        }
+      ],
+      "check": {
+        "question": "A friend stays with you for 3 months and pays part of the rent. The landlord said \"OK\" on a phone call. Is this safe under the paper?",
+        "answer": "no",
+        "explanation": "No. The consent must be in writing and given first. A phone call is not enough."
+      },
+      "verified": true
+    },
+    {
+      "id": "p5",
+      "title": "Ending the agreement with notice",
+      "sourceLabel": "Clause 9",
+      "quote": "After the lock-in period, either party may terminate this agreement by giving 2 (two) months' notice in writing to the other party.",
+      "simple": "After the first 6 months, you or the landlord can end the agreement by giving 2 months' notice in writing.",
+      "detailed": "Once the lock-in period is over, either side can end the agreement. They must tell the other side in writing, 2 months before.",
+      "importance": "high",
+      "favours": "both",
+      "rules": [
+        {
+          "partyId": "lessee",
+          "type": "may",
+          "action": "End the agreement after 6 months with 2 months' written notice"
+        },
+        {
+          "partyId": "lessor",
+          "type": "may",
+          "action": "End the agreement after 6 months with 2 months' written notice"
+        }
+      ],
+      "conditions": ["Only after the 6-month lock-in period", "The notice must be in writing"],
+      "consequences": [],
+      "relatedPointIds": ["p2"],
+      "deadline": "2 months' notice",
+      "terms": [
+        {
+          "term": "notice in writing",
+          "source": "document",
+          "meaning": "A written message (letter, email or signed note) saying you want to end the agreement."
+        }
+      ],
+      "check": {
+        "question": "It is month 8. You tell the landlord on a voice call that you are leaving next week. Is that enough?",
+        "answer": "no",
+        "explanation": "No. You need to give 2 months' notice, and it must be in writing."
+      },
+      "verified": true
+    },
+    {
+      "id": "p6",
+      "title": "How long the agreement lasts",
+      "sourceLabel": "Clause 1",
+      "quote": "The tenancy shall be for a period of 11 (eleven) months commencing from 1st August 2026 and ending on 30th June 2027.",
+      "simple": "The agreement is for 11 months: from 1 August 2026 to 30 June 2027.",
+      "detailed": "The rental period is 11 months. It starts on 1 August 2026 and ends on 30 June 2027. To stay longer, the agreement has to be renewed.",
+      "importance": "medium",
+      "favours": "neutral",
+      "rules": [],
+      "conditions": [],
+      "consequences": [],
+      "relatedPointIds": ["p7"],
+      "deadline": "Ends on 30 June 2027",
+      "terms": [
+        {
+          "term": "tenancy",
+          "source": "document",
+          "meaning": "The time you are allowed to live in the flat as a tenant."
+        }
+      ],
+      "check": {
+        "question": "Does this agreement end on 30 June 2027?",
+        "answer": "yes",
+        "explanation": "Yes. Clause 1 says it runs from 1 August 2026 to 30 June 2027."
+      },
+      "verified": true
+    },
+    {
+      "id": "p7",
+      "title": "Rent increase when renewing",
+      "sourceLabel": "Clause 5",
+      "quote": "Upon renewal of this agreement, the rent may be increased by up to 5% (five percent) of the last paid rent.",
+      "simple": "If you renew, the rent can go up by at most 5%. That is at most Rs. 23,100.",
+      "detailed": "When the agreement is renewed, the landlord may raise the rent, but only by up to 5% of the last rent paid. From Rs. 22,000, the highest new rent is Rs. 23,100.",
+      "importance": "medium",
+      "favours": "lessor",
+      "rules": [
+        {
+          "partyId": "lessor",
+          "type": "may",
+          "action": "Increase the rent by up to 5% when the agreement is renewed"
+        }
+      ],
+      "conditions": ["Only at renewal", "Not more than 5% of the last rent"],
+      "consequences": [],
+      "relatedPointIds": ["p6"],
+      "deadline": "",
+      "terms": [
+        {
+          "term": "renewal",
+          "source": "document",
+          "meaning": "Signing the agreement again for a new period."
+        }
+      ],
+      "check": {
+        "question": "At renewal, the landlord asks for Rs. 25,000 rent. Does this paper allow that?",
+        "answer": "no",
+        "explanation": "No. 5% of Rs. 22,000 is Rs. 1,100, so the most allowed is Rs. 23,100."
+      },
+      "verified": true
+    },
+    {
+      "id": "p8",
+      "title": "Bills and maintenance",
+      "sourceLabel": "Clause 4",
+      "quote": "The Lessee shall pay the electricity and water charges as per actual consumption and the society maintenance charges of Rs. 2,500 per month.",
+      "simple": "You pay electricity, water and Rs. 2,500 maintenance every month, on top of rent. The landlord pays for big building repairs.",
+      "detailed": "The tenant pays electricity and water for what is used, plus society maintenance of Rs. 2,500 a month. These are extra to the rent. Major structural repairs are the landlord's job.",
+      "importance": "medium",
+      "favours": "neutral",
+      "rules": [
+        {
+          "partyId": "lessee",
+          "type": "must",
+          "action": "Pay electricity, water and Rs. 2,500 monthly maintenance"
+        },
+        {
+          "partyId": "lessor",
+          "type": "must",
+          "action": "Pay for major structural repairs"
+        }
+      ],
+      "conditions": [],
+      "consequences": [],
+      "relatedPointIds": [],
+      "deadline": "Every month",
+      "terms": [
+        {
+          "term": "utilities",
+          "source": "document",
+          "meaning": "Services like electricity and water."
+        }
+      ],
+      "check": {
+        "question": "Is the Rs. 2,500 maintenance already included in the Rs. 22,000 rent?",
+        "answer": "no",
+        "explanation": "No. Maintenance is a separate charge that the tenant pays in addition to rent."
+      },
+      "verified": true
+    },
+    {
+      "id": "p9",
+      "title": "Paying for damage",
+      "sourceLabel": "Clause 11",
+      "quote": "The Lessee shall indemnify the Lessor against any loss or damage caused to the Premises by the negligence of the Lessee or the Lessee's guests.",
+      "simple": "If you or your guests carelessly damage the flat, you must pay for it.",
+      "detailed": "The tenant must cover the landlord's loss if the flat is damaged because of carelessness by the tenant or the tenant's guests.",
+      "importance": "medium",
+      "favours": "lessor",
+      "rules": [
+        {
+          "partyId": "lessee",
+          "type": "must",
+          "action": "Pay for loss or damage caused by carelessness of the tenant or guests"
+        }
+      ],
+      "conditions": ["Only for damage caused by carelessness"],
+      "consequences": ["The tenant pays for the loss"],
+      "relatedPointIds": ["p3"],
+      "deadline": "",
+      "terms": [
+        {
+          "term": "indemnify",
+          "source": "document",
+          "meaning": "To pay back someone for a loss."
+        },
+        {
+          "term": "negligence",
+          "source": "document",
+          "meaning": "Carelessness."
+        }
+      ],
+      "check": {
+        "question": "A guest carelessly breaks the bathroom mirror. Could you have to pay for it?",
+        "answer": "yes",
+        "explanation": "Yes. Damage from a guest's carelessness is covered by this clause."
+      },
+      "verified": true
+    },
+    {
+      "id": "p10",
+      "title": "Landlord visits",
+      "sourceLabel": "Clause 10",
+      "quote": "The Lessor may inspect the Premises at reasonable hours after giving at least 24 hours' prior notice to the Lessee.",
+      "simple": "The landlord can check the flat, but must tell you at least 24 hours before and come at a reasonable time.",
+      "detailed": "The landlord may inspect the flat at reasonable hours. The landlord must give at least 24 hours' notice before visiting.",
+      "importance": "low",
+      "favours": "both",
+      "rules": [
+        {
+          "partyId": "lessor",
+          "type": "may",
+          "action": "Inspect the flat with 24 hours' notice, at reasonable hours"
+        }
+      ],
+      "conditions": ["At least 24 hours' notice first", "Only at reasonable hours"],
+      "consequences": [],
+      "relatedPointIds": [],
+      "deadline": "",
+      "terms": [
+        {
+          "term": "inspect",
+          "source": "document",
+          "meaning": "To visit and check the condition of the flat."
+        }
+      ],
+      "check": {
+        "question": "The landlord comes to check the flat at 10 pm without telling you. Does the paper allow this?",
+        "answer": "no",
+        "explanation": "No. The landlord must give 24 hours' notice and visit at reasonable hours."
+      },
+      "verified": true
+    },
+    {
+      "id": "p11",
+      "title": "Which court handles disputes",
+      "sourceLabel": "Clause 12",
+      "quote": "Any dispute arising out of this agreement shall be subject to the exclusive jurisdiction of the courts at Hyderabad.",
+      "simple": "If there is a legal fight about this agreement, only courts in Hyderabad can hear it.",
+      "detailed": "Any dispute about this agreement must go to the courts in Hyderabad, and no other city.",
+      "importance": "low",
+      "favours": "neutral",
+      "rules": [],
+      "conditions": [],
+      "consequences": [],
+      "relatedPointIds": [],
+      "deadline": "",
+      "terms": [
+        {
+          "term": "jurisdiction",
+          "source": "document",
+          "meaning": "Which court has the power to hear a case."
+        }
+      ],
+      "verified": true
+    }
+  ],
+  "keyDates": [
+    {
+      "date": "2026-08-01",
+      "pointId": "p6",
+      "label": "Rent agreement starts"
+    },
+    {
+      "date": "2027-06-30",
+      "pointId": "p6",
+      "label": "Rent agreement ends — renew or move out"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "leave-early",
+      "title": "What if I want to leave early?",
+      "startId": "q1",
+      "nodes": [
+        {
+          "id": "q1",
+          "yes": "q2",
+          "no": "o1",
+          "pointIds": ["p2"],
+          "question": "Have you already stayed more than 6 months?"
+        },
+        {
+          "id": "q2",
+          "yes": "o2",
+          "no": "o3",
+          "pointIds": ["p5"],
+          "question": "Will you give the landlord 2 months' notice in writing?"
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "o1",
+          "tone": "bad",
+          "pointIds": ["p2"],
+          "text": "You are still in the 6-month lock-in period. If you leave now, the paper says you must pay rent for the remaining lock-in months."
+        },
+        {
+          "id": "o2",
+          "tone": "good",
+          "pointIds": ["p5", "p3"],
+          "text": "You can leave when the 2 months' notice ends. Your deposit should come back within 30 days after you move out."
+        },
+        {
+          "id": "o3",
+          "tone": "bad",
+          "pointIds": ["p5"],
+          "text": "The paper allows ending the agreement only with 2 months' written notice. Leaving without it does not follow the agreement. Talk to the landlord, or ask a lawyer or legal aid first."
+        }
+      ]
+    },
+    {
+      "id": "friend-stays",
+      "title": "What if a friend wants to stay and share the rent?",
+      "startId": "q1",
+      "nodes": [
+        {
+          "id": "q1",
+          "yes": "o1",
+          "no": "o2",
+          "pointIds": ["p4"],
+          "question": "Has the landlord agreed in writing, before your friend moves in?"
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "o1",
+          "tone": "good",
+          "pointIds": ["p4"],
+          "text": "This is allowed, because the landlord gave written permission first. Keep that written permission safe."
+        },
+        {
+          "id": "o2",
+          "tone": "bad",
+          "pointIds": ["p4"],
+          "text": "Without written permission first, this breaks Clause 6. The paper says you can lose your full Rs. 66,000 deposit."
+        }
+      ]
+    },
+    {
+      "id": "deposit-kept",
+      "title": "What if the landlord does not return my deposit?",
+      "startId": "q1",
+      "nodes": [
+        {
+          "id": "q1",
+          "yes": "q2",
+          "no": "o1",
+          "pointIds": ["p3"],
+          "question": "Has it been more than 30 days since you moved out?"
+        },
+        {
+          "id": "q2",
+          "yes": "o2",
+          "no": "o3",
+          "pointIds": ["p3"],
+          "question": "Did you leave unpaid rent, unpaid bills, or damage beyond normal use?"
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "o1",
+          "tone": "caution",
+          "pointIds": ["p3"],
+          "text": "The landlord has up to 30 days after you move out to return the deposit. Wait until the 30 days are over."
+        },
+        {
+          "id": "o2",
+          "tone": "caution",
+          "pointIds": ["p3", "p9"],
+          "text": "The landlord can cut those amounts from the deposit. The rest of the deposit should still come back to you."
+        },
+        {
+          "id": "o3",
+          "tone": "bad",
+          "pointIds": ["p3"],
+          "text": "The paper says the deposit must be returned within 30 days, so the landlord is late. You can remind the landlord in writing, and contact free legal aid (15100) if it is still not paid."
+        }
+      ]
+    }
+  ],
+  "lawyerQuestions": [
+    "If I must leave during the 6-month lock-in because of a job transfer, can the landlord still ask for all the remaining rent?",
+    "Is a late fee of Rs. 200 per day fair and enforceable?",
+    "What counts as \"normal wear and tear\" when the landlord cuts money from my deposit?",
+    "Does a family member staying with me count as subletting?"
+  ],
+  "language": "en"
+}
