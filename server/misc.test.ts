@@ -5,7 +5,7 @@ import {
   answerInstruction,
   answerParts,
 } from './ai/prompts.js';
-import { DEFAULT_GEMINI_MODEL, loadConfig } from './config.js';
+import { DEFAULT_GEMINI_FALLBACK_MODEL, DEFAULT_GEMINI_MODEL, loadConfig } from './config.js';
 import { detectMimeType } from './lib/fileSignature.js';
 
 const b64 = (bytes: number[]): string =>
@@ -16,6 +16,7 @@ describe('loadConfig', () => {
     expect(loadConfig({})).toEqual({
       geminiApiKey: null,
       geminiModel: DEFAULT_GEMINI_MODEL,
+      geminiFallbackModel: DEFAULT_GEMINI_FALLBACK_MODEL,
       port: 8787,
       rateLimitMax: 30,
       aiTimeoutMs: 120_000,
@@ -27,6 +28,7 @@ describe('loadConfig', () => {
     const config = loadConfig({
       GEMINI_API_KEY: ' key ',
       GEMINI_MODEL: 'gemini-3.8-flash',
+      GEMINI_FALLBACK_MODEL: 'none',
       PORT: '3000',
       RATE_LIMIT_MAX: '5',
       NODE_ENV: 'production',
@@ -34,6 +36,7 @@ describe('loadConfig', () => {
     expect(config).toMatchObject({
       geminiApiKey: 'key',
       geminiModel: 'gemini-3.8-flash',
+      geminiFallbackModel: null,
       port: 3000,
       rateLimitMax: 5,
       isProduction: true,

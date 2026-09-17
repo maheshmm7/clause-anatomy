@@ -150,13 +150,14 @@ npm start                   # http://localhost:8787
 
 ### Environment variables
 
-| Variable         | Required    | Default            | Purpose                                                          |
-| ---------------- | ----------- | ------------------ | ---------------------------------------------------------------- |
-| `GEMINI_API_KEY` | for live AI | —                  | Gemini API key (server only, never sent to the browser)          |
-| `GEMINI_MODEL`   | no          | `gemini-3.6-flash` | Any stable Gemini model with JSON output and image understanding |
-| `PORT`           | no          | `8787`             | Port for `npm start`                                             |
-| `RATE_LIMIT_MAX` | no          | `30`               | AI requests per client IP per 10 minutes                         |
-| `AI_TIMEOUT_MS`  | no          | `120000`           | Hard timeout for each AI call                                    |
+| Variable                | Required    | Default            | Purpose                                                                |
+| ----------------------- | ----------- | ------------------ | ---------------------------------------------------------------------- |
+| `GEMINI_API_KEY`        | for live AI | —                  | Gemini API key (server only, never sent to the browser)                |
+| `GEMINI_MODEL`          | no          | `gemini-3.6-flash` | Any stable Gemini model with JSON output and image understanding       |
+| `GEMINI_FALLBACK_MODEL` | no          | `gemini-2.5-flash` | Used automatically when the main model is overloaded (`none` disables) |
+| `PORT`                  | no          | `8787`             | Port for `npm start`                                                   |
+| `RATE_LIMIT_MAX`        | no          | `30`               | AI requests per client IP per 10 minutes                               |
+| `AI_TIMEOUT_MS`         | no          | `120000`           | Hard timeout for each AI call                                          |
 
 ### Quality commands
 

@@ -27,10 +27,17 @@ const REQUEST: GenerateJsonRequest<unknown> = {
 
 const VALID = { text: JSON.stringify({ basis: 'none', answer: 'Ask a lawyer.', quotes: [] }) };
 
-function client(sdk: never, model = 'gemini-3.6-flash') {
+function client(sdk: never, model = 'gemini-3.6-flash', fallbackModel: string | null = null) {
   const logger = { warn: vi.fn() };
   return {
-    client: createGeminiClient({ apiKey: 'k', model, timeoutMs: 5_000, sdk, logger }),
+    client: createGeminiClient({
+      apiKey: 'k',
+      model,
+      fallbackModel,
+      timeoutMs: 5_000,
+      sdk,
+      logger,
+    }),
     logger,
   };
 }
@@ -83,7 +90,11 @@ describe('createGeminiClient', () => {
 
   it('falls back to plain JSON mode when the model rejects the schema', async () => {
     const { sdk, generateContent } = fakeSdk(
-      new ApiError({ message: 'Invalid JSON schema: too complex', status: 400 }),
+      // What Gemini really says for a schema it cannot enforce.
+      new ApiError({
+        message: '{"error":{"code":400,"message":"Request contains an invalid argument."}}',
+        status: 400,
+      }),
       VALID,
     );
     await client(sdk).client.generateJson(REQUEST);
@@ -91,6 +102,57 @@ describe('createGeminiClient', () => {
       { config: Record<string, unknown> },
     ];
     expect(second[0].config.responseJsonSchema).toBeUndefined();
+  });
+
+  it('moves to the fallback model when the main model is overloaded', async () => {
+    const { sdk, generateContent } = fakeSdk(
+      new ApiError({ message: 'This model is currently experiencing high demand.', status: 503 }),
+      VALID,
+    );
+    const { client: ai, logger } = client(sdk, 'gemini-3.6-flash', 'gemini-2.5-flash');
+    await expect(ai.generateJson(REQUEST)).resolves.toMatchObject({ basis: 'none' });
+
+    const calls = generateContent.mock.calls as unknown as [
+      { model: string; config: Record<string, unknown> },
+    ][];
+    expect(calls.map(([call]) => call.model)).toEqual(['gemini-3.6-flash', 'gemini-2.5-flash']);
+    // Older models do not accept thinkingLevel; the schema is still sent.
+    expect(calls[1]?.[0].config.thinkingConfig).toBeUndefined();
+    expect(calls[1]?.[0].config.responseJsonSchema).toBeDefined();
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('PRIVATE DOCUMENT TEXT');
+  });
+
+  it('hands a slow main model over to the fallback within its time budget', async () => {
+    const { sdk, generateContent } = fakeSdk(new DOMException('slow', 'TimeoutError'), VALID);
+    await expect(
+      client(sdk, 'gemini-3.6-flash', 'gemini-2.5-flash').client.generateJson(REQUEST),
+    ).resolves.toMatchObject({ basis: 'none' });
+    expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not use the fallback for errors another model cannot fix', async () => {
+    const { sdk, generateContent } = fakeSdk(
+      new ApiError({ message: 'API key not valid', status: 400 }),
+      VALID,
+    );
+    await expectHttpError(
+      client(sdk, 'gemini-3.6-flash', 'gemini-2.5-flash').client.generateJson(REQUEST),
+      503,
+      'ai_unavailable',
+    );
+    expect(generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports busy when the fallback is overloaded too', async () => {
+    const { sdk } = fakeSdk(
+      new ApiError({ message: 'overloaded', status: 503 }),
+      new ApiError({ message: 'quota', status: 429 }),
+    );
+    await expectHttpError(
+      client(sdk, 'gemini-3.6-flash', 'gemini-2.5-flash').client.generateJson(REQUEST),
+      503,
+      'ai_busy',
+    );
   });
 
   it.each([

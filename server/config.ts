@@ -3,13 +3,18 @@ import { z } from 'zod';
 /** Default model: a stable, fast Gemini model with JSON output and image understanding. */
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
 
+/** Stable model used when the main one is overloaded. Set to `none` to disable. */
+export const DEFAULT_GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash';
+
+const modelId = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9.-]{3,64}$/, 'must be a plain model id');
+
 const envSchema = z.object({
   GEMINI_API_KEY: z.string().trim().optional(),
-  GEMINI_MODEL: z
-    .string()
-    .trim()
-    .regex(/^[a-z0-9.-]{3,64}$/, 'GEMINI_MODEL must be a plain model id')
-    .optional(),
+  GEMINI_MODEL: modelId.optional(),
+  GEMINI_FALLBACK_MODEL: modelId.optional(),
   PORT: z.coerce.number().int().min(1).max(65_535).optional(),
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10_000).optional(),
   AI_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(300_000).optional(),
@@ -19,6 +24,8 @@ const envSchema = z.object({
 export interface ServerConfig {
   geminiApiKey: string | null;
   geminiModel: string;
+  /** `null` when disabled. */
+  geminiFallbackModel: string | null;
   port: number;
   /** Max AI requests per client IP per window. */
   rateLimitMax: number;
@@ -41,6 +48,10 @@ export function loadConfig(env: Record<string, string | undefined>): ServerConfi
   return {
     geminiApiKey: values.GEMINI_API_KEY ? values.GEMINI_API_KEY : null,
     geminiModel: values.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL,
+    geminiFallbackModel:
+      values.GEMINI_FALLBACK_MODEL === 'none'
+        ? null
+        : (values.GEMINI_FALLBACK_MODEL ?? DEFAULT_GEMINI_FALLBACK_MODEL),
     port: values.PORT ?? 8787,
     rateLimitMax: values.RATE_LIMIT_MAX ?? 30,
     aiTimeoutMs: values.AI_TIMEOUT_MS ?? 120_000,
