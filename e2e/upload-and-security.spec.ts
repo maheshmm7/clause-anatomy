@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { chooseEnglish, expectNoHorizontalScroll, makeTextPdf } from './support';
+import { openWorkspace, expectNoHorizontalScroll, makeTextPdf } from './support';
 
 const analysis = JSON.parse(
   readFileSync(new URL('./fixtures/rental-analysis.json', import.meta.url), 'utf8'),
@@ -19,7 +19,7 @@ test.describe('document upload in a real browser', () => {
       await route.fulfill({ json: analysis });
     });
 
-    await chooseEnglish(page);
+    await openWorkspace(page);
     const pdf = makeTextPdf([
       'RESIDENTIAL RENTAL AGREEMENT',
       'Lessee mobile: 98765 43210, PAN: ABCDE1234F',
@@ -48,7 +48,7 @@ test.describe('document upload in a real browser', () => {
       extractCalls += 1;
       return route.fulfill({ json: { quality: 'unreadable', text: '' } });
     });
-    await chooseEnglish(page);
+    await openWorkspace(page);
 
     // A tiny valid PNG, drawn and compressed by the browser before upload.
     const png = Buffer.from(
@@ -113,7 +113,10 @@ test.describe('production server security', () => {
       if (req.resourceType() === 'script') scripts.push(req.url());
     });
     await page.goto('/');
-    await page.getByRole('button', { name: 'English' }).click();
+    await page
+      .getByRole('link', { name: /Open the workspace/ })
+      .first()
+      .click();
     await expect(page.getByRole('button', { name: /Try an example/ })).toBeVisible();
     expect(scripts.some((url) => /pdf[.-]/.test(url))).toBe(false);
   });

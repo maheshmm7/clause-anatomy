@@ -32,5 +32,15 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2022',
     sourcemap: false,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // Everything the first screen needs goes into one chunk, instead of a dozen tiny
+          // shared chunks that each cost a round trip on slow mobile networks. Sections,
+          // examples, pdf.js and schema validation still load on demand.
+          groups: [{ name: 'app', tags: ['$initial'] }],
+        },
+      },
+    },
   },
 }));

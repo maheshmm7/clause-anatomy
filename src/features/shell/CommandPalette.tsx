@@ -34,7 +34,8 @@ export function buildPaletteItems(
   handlers: {
     go: (view: View, options?: { pointId?: string }) => void;
     toggleTheme: () => void;
-    openLanguagePage: () => void;
+    openSettings: () => void;
+    openLanding: () => void;
   },
 ): PaletteItem[] {
   const doc = state.docs.find((candidate) => candidate.id === state.activeId);
@@ -91,11 +92,18 @@ export function buildPaletteItems(
       run: handlers.toggleTheme,
     },
     {
-      id: 'action-language',
+      id: 'action-settings',
       group: 'actions',
-      label: t('languagePage'),
-      icon: 'globe',
-      run: handlers.openLanguagePage,
+      label: t('actionOpenSettings'),
+      icon: 'sliders',
+      run: handlers.openSettings,
+    },
+    {
+      id: 'action-landing',
+      group: 'actions',
+      label: t('actionHomePage'),
+      icon: 'home',
+      run: handlers.openLanding,
     },
   ];
 
@@ -233,4 +241,18 @@ export function CommandPalette({
       <p className="palette__hint">{t('paletteHint')}</p>
     </Dialog>
   );
+}
+
+/** The palette for the current workspace (lazy-loaded the first time search is opened). */
+export function WorkspacePalette({
+  state,
+  handlers,
+  onClose,
+}: {
+  state: WorkspaceState;
+  handlers: Parameters<typeof buildPaletteItems>[2];
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  return <CommandPalette items={buildPaletteItems(state, t, handlers)} onClose={onClose} />;
 }

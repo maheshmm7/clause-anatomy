@@ -27,14 +27,14 @@ async function renderApp(routes: Record<string, FakeRoute | FakeRoute[]>) {
     '/api/health': { body: { status: 'ok', aiAvailable: true } },
     ...routes,
   });
+  window.localStorage.setItem('clause-anatomy:uiLanguage', 'en');
+  window.history.replaceState(null, '', '#/workspace');
   render(
     <SettingsProvider>
       <App />
     </SettingsProvider>,
   );
-  const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: /English/ }));
-  return { ...fetch, user };
+  return { ...fetch, user: userEvent.setup() };
 }
 
 async function uploadPhoto(user: ReturnType<typeof userEvent.setup>) {

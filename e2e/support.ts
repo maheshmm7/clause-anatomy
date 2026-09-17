@@ -21,9 +21,12 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
-export async function chooseEnglish(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'English' }).click();
+/** Opens the workspace directly, in English. */
+export async function openWorkspace(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('clause-anatomy:uiLanguage', 'en');
+  });
+  await page.goto('/#/workspace');
   await expect(
     page.getByRole('heading', { level: 1, name: 'Read the fine print. Understand every clause.' }),
   ).toBeVisible();

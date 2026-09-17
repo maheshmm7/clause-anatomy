@@ -1,7 +1,8 @@
-import { useId, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useWorkspace } from '../../app/WorkspaceContext';
 import type { WorkspaceDoc } from '../../app/workspace';
 import { Icon } from '../../components/Icon';
+import { Select } from '../../components/Select';
 import { Notice, Panel, ScrollArea, ViewHeader } from '../../components/ui';
 import { useFocusOnMount } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -20,20 +21,19 @@ function DocPicker({
   exclude: string | null;
   onChange: (id: string) => void;
 }) {
-  const id = useId();
   return (
-    <div className="field-row">
-      <label htmlFor={id} className="field-row__label">
-        {label}
-      </label>
-      <select id={id} value={value ?? ''} onChange={(event) => onChange(event.target.value)}>
-        {docs.map((doc) => (
-          <option key={doc.id} value={doc.id} disabled={doc.id === exclude}>
-            {doc.loaded.analysis.documentType}
-          </option>
-        ))}
-      </select>
-    </div>
+    <Select
+      label={label}
+      value={value ?? ''}
+      options={docs
+        .filter((doc) => doc.id !== exclude)
+        .map((doc) => ({
+          value: doc.id,
+          label: doc.loaded.analysis.documentType,
+          lang: doc.loaded.analysis.language,
+        }))}
+      onChange={onChange}
+    />
   );
 }
 

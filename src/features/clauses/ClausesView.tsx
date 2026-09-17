@@ -5,6 +5,7 @@ import { locateQuote, prepareSource } from '../../../shared/verifyQuote';
 import { useActiveDoc } from '../../app/WorkspaceContext';
 import { Segmented } from '../../components/controls';
 import { Icon } from '../../components/Icon';
+import { Select } from '../../components/Select';
 import { Panel, ViewHeader } from '../../components/ui';
 import { useFocusOnChange, useFocusOnMount, useMediaQuery } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -33,7 +34,6 @@ export function ClausesView() {
   const [filter, setFilter] = useState<ClauseFilter>('all');
   const [query, setQuery] = useState('');
   const searchId = useId();
-  const jumpId = useId();
 
   const { analysis, text } = doc.loaded;
   const points = analysis.points;
@@ -167,23 +167,16 @@ export function ClausesView() {
                 })}
               </ol>
             ) : (
-              <div className="field-row">
-                <label htmlFor={jumpId} className="field-row__label">
-                  {t('jumpToClause')}
-                </label>
-                <select
-                  id={jumpId}
-                  value={current?.id}
-                  onChange={(event) => select(event.target.value)}
-                  lang={analysis.language}
-                >
-                  {visible.map((point) => (
-                    <option key={point.id} value={point.id}>
-                      {String(points.indexOf(point) + 1).padStart(2, '0')} · {point.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label={t('jumpToClause')}
+                value={current?.id ?? ''}
+                options={visible.map((point) => ({
+                  value: point.id,
+                  label: `${String(points.indexOf(point) + 1).padStart(2, '0')} · ${point.title}`,
+                  lang: analysis.language,
+                }))}
+                onChange={select}
+              />
             )}
           </aside>
 

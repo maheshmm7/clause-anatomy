@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+
+// Sections and dialogs are lazy-loaded chunks; allow for slower machines under coverage.
+configure({ asyncUtilTimeout: 4000 });
 
 // jsdom does not implement layout APIs that real browsers provide.
 if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {

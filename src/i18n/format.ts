@@ -1,9 +1,25 @@
 import type { UiLanguage } from '../../shared/languages';
 import { en, type MessageKey, type Messages } from './messages/en';
-import { hi } from './messages/hi';
-import { te } from './messages/te';
 
-export const MESSAGES: Record<UiLanguage, Messages> = { en, hi, te };
+/**
+ * English ships with the app; Hindi and Telugu load on demand, so readers download
+ * only the interface language they use.
+ */
+const loaded: Partial<Record<UiLanguage, Messages>> = { en };
+
+const LOADERS: Record<Exclude<UiLanguage, 'en'>, () => Promise<Messages>> = {
+  hi: async () => (await import('./messages/hi')).hi,
+  te: async () => (await import('./messages/te')).te,
+};
+
+export function hasMessages(language: UiLanguage): boolean {
+  return Boolean(loaded[language]);
+}
+
+export async function loadMessages(language: UiLanguage): Promise<void> {
+  if (language === 'en' || loaded[language]) return;
+  loaded[language] = await LOADERS[language]();
+}
 
 export type MessageValues = Record<string, string | number>;
 
@@ -13,7 +29,7 @@ export function formatMessage(
   key: MessageKey,
   values: MessageValues = {},
 ): string {
-  const template = MESSAGES[language][key];
+  const template = (loaded[language] ?? en)[key];
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in values ? String(values[name]) : match,
   );

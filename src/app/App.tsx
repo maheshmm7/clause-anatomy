@@ -7,26 +7,21 @@ import {
   useReducer,
   useRef,
   useState,
+  type MouseEvent,
 } from 'react';
-import type { UiLanguage } from '../../shared/languages';
 import { ApiClientError, api } from '../api/client';
-import { Dialog } from '../components/Dialog';
-import { Icon } from '../components/Icon';
 import { Spinner } from '../components/ui';
-import { HomeView } from '../features/home/HomeView';
-import { BottomNav } from '../features/shell/BottomNav';
-import { buildPaletteItems, CommandPalette } from '../features/shell/CommandPalette';
-import { Sidebar } from '../features/shell/Sidebar';
-import { Topbar } from '../features/shell/Topbar';
-import { LanguageWelcome } from '../features/welcome/LanguageWelcome';
-import { WorkingScreen } from '../features/working/WorkingScreen';
+import { LandingPage } from '../features/site/LandingPage';
 import { SpeechProvider } from '../hooks/speech';
+import { hasMessages, loadMessages } from '../i18n/format';
 import { I18nProvider, useI18n } from '../i18n/I18nProvider';
+import { LEGAL_TITLE_KEYS } from '../i18n/legalPages';
 import type { MessageKey } from '../i18n/messages/en';
 import { useSettings } from '../settings/SettingsProvider';
 import type { LoadedDocument } from './flow';
-import { readHistoryEntry, VIEW_META, writeHistoryEntry } from './navigation';
+import { parseRoute, readRouteDocId, VIEW_META, writeRoute, type Route } from './navigation';
 import { useDocumentFlow } from './useDocumentFlow';
+import { WorkspaceLayout } from './WorkspaceLayout';
 import { WorkspaceContext, type WorkspaceApi } from './WorkspaceContext';
 import {
   activeDoc,
@@ -34,51 +29,26 @@ import {
   isDocumentView,
   workspaceReducer,
   type View,
+  type WorkspaceState,
 } from './workspace';
 
-// Sections load on demand: the first screen stays light, each section is its own chunk.
-const OverviewView = lazy(async () => ({
-  default: (await import('../features/overview/OverviewView')).OverviewView,
-}));
-const ClausesView = lazy(async () => ({
-  default: (await import('../features/clauses/ClausesView')).ClausesView,
-}));
-const DocumentView = lazy(async () => ({
-  default: (await import('../features/document/DocumentView')).DocumentView,
-}));
-const RiskView = lazy(async () => ({
-  default: (await import('../features/risks/RiskView')).RiskView,
-}));
-const WhatIfView = lazy(async () => ({
-  default: (await import('../features/whatif/WhatIfView')).WhatIfView,
-}));
-const AskView = lazy(async () => ({ default: (await import('../features/ask/AskView')).AskView }));
-const GlossaryView = lazy(async () => ({
-  default: (await import('../features/glossary/GlossaryView')).GlossaryView,
-}));
-const PlanView = lazy(async () => ({
-  default: (await import('../features/plan/PlanView')).PlanView,
-}));
-const CompareView = lazy(async () => ({
-  default: (await import('../features/compare/CompareView')).CompareView,
+// Legal pages are rarely visited: they load on demand. (The workspace shell stays in the
+// entry bundle: splitting it saved ~3 KB but cost a dozen extra requests on slow networks.)
+const LegalPage = lazy(async () => ({
+  default: (await import('../features/site/LegalPage')).LegalPage,
 }));
 
-const SECTION_VIEWS = {
-  overview: OverviewView,
-  clauses: ClausesView,
-  document: DocumentView,
-  risks: RiskView,
-  whatif: WhatIfView,
-  ask: AskView,
-  glossary: GlossaryView,
-  plan: PlanView,
-  compare: CompareView,
-} as const;
+type Page = Exclude<Route, { page: 'app'; view: View }> | { page: 'app' };
 
-/** Checks once whether live AI is configured, so the UI can explain what is available. */
-function useAiAvailability(): boolean | null {
+/**
+ * Checks once whether live AI is configured, so the workspace can explain what is
+ * available. Waits until the workspace is opened: the home page does not need it.
+ */
+function useAiAvailability(enabled: boolean): boolean | null {
   const [available, setAvailable] = useState<boolean | null>(null);
+  const checked = available !== null;
   useEffect(() => {
+    if (!enabled || checked) return undefined;
     const controller = new AbortController();
     api
       .health(controller.signal)
@@ -87,43 +57,59 @@ function useAiAvailability(): boolean | null {
         if (!controller.signal.aborted) setAvailable(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [enabled, checked]);
   return available;
 }
 
-function isTyping(target: EventTarget | null): boolean {
-  const element = target as HTMLElement | null;
+/** Full-height placeholder while a page chunk loads, so nothing below it jumps. */
+function PageLoading() {
   return (
-    !!element &&
-    (element.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName))
+    <div className="page-loading">
+      <Spinner />
+    </div>
   );
 }
 
 function SkipLink() {
   const { t } = useI18n();
+  // The URL hash holds the page, so move focus instead of following the fragment.
+  const skip = (event: MouseEvent<HTMLAnchorElement>): void => {
+    event.preventDefault();
+    const main = document.getElementById('main');
+    main?.focus();
+    main?.scrollIntoView({ block: 'start' });
+  };
   return (
-    <a className="skip-link" href="#main">
+    <a className="skip-link" href="#main" onClick={skip}>
       {t('skipToContent')}
     </a>
   );
 }
 
+const pageOf = (route: Route): Page => (route.page === 'app' ? { page: 'app' } : route);
+
+function initialState(route: Route): WorkspaceState {
+  return route.page === 'app'
+    ? workspaceReducer(initialWorkspace, { type: 'navigate', view: route.view })
+    : initialWorkspace;
+}
+
 function Shell() {
   const { t } = useI18n();
-  const { uiLanguage, setUiLanguage, explanationLanguage, theme, setTheme } = useSettings();
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [state, dispatch] = useReducer(workspaceReducer, initialWorkspace);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const { explanationLanguage } = useSettings();
+  const [initialRoute] = useState(() => parseRoute(window.location.hash));
+  const [page, setPage] = useState<Page>(() => pageOf(initialRoute));
+  const [state, dispatch] = useReducer(workspaceReducer, initialRoute, initialState);
   const [askDraft, setAskDraft] = useState('');
-  const aiAvailable = useAiAvailability();
+  const aiAvailable = useAiAvailability(page.page === 'app');
   const doc = activeDoc(state);
   const activeId = state.activeId;
 
   const onLoaded = useCallback((loaded: LoadedDocument) => {
     const id = `paper-${crypto.randomUUID()}`;
     dispatch({ type: 'addDocument', id, loaded });
-    writeHistoryEntry({ screen: 'app', view: 'overview', docId: id });
+    setPage({ page: 'app' });
+    writeRoute({ page: 'app', view: 'overview' }, id);
   }, []);
 
   const flow = useDocumentFlow({
@@ -137,15 +123,16 @@ function Shell() {
       if (options.docId) dispatch({ type: 'openDocument', id: options.docId, view });
       if (options.pointId) dispatch({ type: 'selectPoint', pointId: options.pointId });
       dispatch({ type: 'navigate', view });
-      setShowWelcome(false);
-      writeHistoryEntry({
-        screen: 'app',
-        view,
-        docId: options.docId ?? activeId,
-      });
+      setPage({ page: 'app' });
+      writeRoute({ page: 'app', view }, options.docId ?? activeId);
     },
     [activeId],
   );
+
+  const openLanding = useCallback(() => {
+    setPage({ page: 'landing' });
+    writeRoute({ page: 'landing' });
+  }, []);
 
   const ask = useCallback(
     (question: string) => {
@@ -165,41 +152,36 @@ function Shell() {
     [doc],
   );
 
-  // Browser back/forward move between the language page and workspace sections.
+  // The URL always shows where the reader is; Back/Forward and links move between pages.
   useEffect(() => {
-    writeHistoryEntry({ screen: 'welcome' }, true);
-    const onPopState = (event: PopStateEvent): void => {
-      const entry = readHistoryEntry(event.state);
-      setMenuOpen(false);
-      setPaletteOpen(false);
-      if (entry.screen === 'welcome') {
-        setShowWelcome(true);
-        return;
-      }
-      setShowWelcome(false);
-      if (entry.docId) dispatch({ type: 'openDocument', id: entry.docId, view: entry.view });
-      dispatch({ type: 'navigate', view: entry.view });
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    const route = parseRoute(window.location.hash);
+    if (route.page === 'app') writeRoute({ page: 'app', view: state.view }, state.activeId, true);
+    else writeRoute(route, null, true);
+    // Only normalise the address once, on first load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Global shortcuts: Ctrl/⌘ + K or "/" opens search.
   useEffect(() => {
-    if (showWelcome) return undefined;
-    const onKeyDown = (event: KeyboardEvent): void => {
-      const combo = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
-      if (combo || (event.key === '/' && !isTyping(event.target))) {
-        event.preventDefault();
-        setPaletteOpen(true);
-      }
+    const sync = (): void => {
+      const { hash } = window.location;
+      if (hash !== '' && !hash.startsWith('#/')) return; // e.g. the skip link
+      const route = parseRoute(hash);
+      setPage(pageOf(route));
+      if (route.page !== 'app') return;
+      const docId = readRouteDocId(window.history.state);
+      if (docId) dispatch({ type: 'openDocument', id: docId, view: route.view });
+      dispatch({ type: 'navigate', view: route.view });
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showWelcome]);
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
+    };
+  }, []);
 
-  // A new section starts at the top.
-  const screenKey = `${showWelcome}|${state.view}|${state.activeId}|${flow.state.stage}`;
+  // A new page or section starts at the top.
+  const screenKey = `${page.page}|${page.page === 'legal' ? page.doc : ''}|${state.view}|${state.activeId}|${flow.state.stage}`;
   const previousKey = useRef(screenKey);
   useEffect(() => {
     if (previousKey.current === screenKey) return;
@@ -208,24 +190,18 @@ function Shell() {
   }, [screenKey]);
 
   useEffect(() => {
-    const section = t(VIEW_META[state.view].labelKey);
-    const paper = doc && isDocumentView(state.view) ? `${doc.loaded.analysis.documentType} · ` : '';
-    document.title = showWelcome
-      ? `${t('appName')} — ${t('brandTagline')}`
-      : `${section} · ${paper}${t('appName')}`;
-  }, [showWelcome, state.view, doc, t]);
-
-  const chooseLanguage = (language: UiLanguage): void => {
-    setUiLanguage(language);
-    setShowWelcome(false);
-    writeHistoryEntry({ screen: 'app', view: state.view, docId: state.activeId });
-  };
-
-  const openLanguagePage = useCallback((): void => {
-    setMenuOpen(false);
-    setShowWelcome(true);
-    writeHistoryEntry({ screen: 'welcome' });
-  }, []);
+    const brand = t('appName');
+    if (page.page === 'landing') {
+      document.title = `${brand} — ${t('brandTagline')}`;
+    } else if (page.page === 'legal') {
+      document.title = `${t(LEGAL_TITLE_KEYS[page.doc])} · ${brand}`;
+    } else {
+      const section = t(VIEW_META[state.view].labelKey);
+      const paper =
+        doc && isDocumentView(state.view) ? `${doc.loaded.analysis.documentType} · ` : '';
+      document.title = `${section} · ${paper}${brand}`;
+    }
+  }, [page, state.view, doc, t]);
 
   const api_: WorkspaceApi = useMemo(
     () => ({
@@ -241,125 +217,44 @@ function Shell() {
     [state, doc, aiAvailable, go, ask, askDraft],
   );
 
-  const paletteItems = useMemo(
-    () =>
-      paletteOpen
-        ? buildPaletteItems(state, t, {
-            go,
-            toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
-            openLanguagePage,
-          })
-        : [],
-    [paletteOpen, state, t, go, theme, setTheme, openLanguagePage],
-  );
-
-  if (showWelcome) {
+  if (page.page === 'landing') {
     return (
-      <main id="main" className="welcome-page" tabIndex={-1}>
-        <LanguageWelcome current={uiLanguage} onChoose={chooseLanguage} />
-      </main>
+      <LandingPage
+        onTryExample={() => {
+          go('home');
+          void flow.loadSample('rental');
+        }}
+      />
     );
   }
 
-  const Section = state.view === 'home' ? null : SECTION_VIEWS[state.view];
-  const showBottomNav = Boolean(doc) && isDocumentView(state.view);
+  if (page.page === 'legal') {
+    return (
+      <Suspense fallback={<PageLoading />}>
+        <LegalPage doc={page.doc} />
+      </Suspense>
+    );
+  }
 
   return (
     <WorkspaceContext.Provider value={api_}>
-      <div className={`app${showBottomNav ? ' app--with-bottom-nav' : ''}`}>
-        <aside className="app__rail no-print">
-          <Sidebar
-            state={state}
-            onNavigate={(view, docId) => go(view, { docId })}
-            onOpenLanguagePage={openLanguagePage}
-          />
-        </aside>
-
-        <div className="app__main">
-          <Topbar
-            view={state.view}
-            doc={doc}
-            menuOpen={menuOpen}
-            onOpenMenu={() => setMenuOpen(true)}
-            onOpenPalette={() => setPaletteOpen(true)}
-            onNavigate={(view) => go(view)}
-          />
-          <main id="main" className={`workspace workspace--${state.view}`} tabIndex={-1}>
-            {flow.state.stage === 'working' ? (
-              <WorkingScreen step={flow.state.step} onCancel={flow.cancel} />
-            ) : Section ? (
-              <Suspense fallback={<Spinner />}>
-                <Section key={`${state.view}-${state.activeId}`} />
-              </Suspense>
-            ) : (
-              <HomeView
-                aiAvailable={aiAvailable}
-                error={flow.state.error}
-                pending={flow.state.pending}
-                onSubmitText={(text) => void flow.submitText(text)}
-                onSubmitFile={(file) => void flow.submitFile(file)}
-                onLoadSample={(id) => void flow.loadSample(id)}
-                onConfirmConsent={(pending) => void flow.confirmConsent(pending)}
-                onCancelConsent={flow.cancelConsent}
-              />
-            )}
-          </main>
-          <footer className="app__footer">
-            <p>
-              <Icon name="shield" /> <strong>{t('disclaimerShort')}</strong>
-            </p>
-            <p className="hint">{t('disclaimerFull')}</p>
-            <p className="hint">
-              <Icon name="lock" /> {t('footerPrivacy')}
-            </p>
-          </footer>
-        </div>
-
-        {showBottomNav && (
-          <BottomNav
-            view={state.view}
-            onNavigate={(view) => go(view)}
-            onOpenMenu={() => setMenuOpen(true)}
-          />
-        )}
-
-        {menuOpen && (
-          <Dialog
-            id="workspace-drawer"
-            label={t('navMainLabel')}
-            className="drawer-panel"
-            onClose={() => setMenuOpen(false)}
-          >
-            <button
-              type="button"
-              className="icon-btn drawer-panel__close"
-              onClick={() => setMenuOpen(false)}
-            >
-              <Icon name="x" />
-              <span className="visually-hidden">{t('closeMenu')}</span>
-            </button>
-            <Sidebar
-              state={state}
-              onNavigate={(view, docId) => go(view, { docId })}
-              onOpenLanguagePage={openLanguagePage}
-              onAfterNavigate={() => setMenuOpen(false)}
-            />
-          </Dialog>
-        )}
-
-        {paletteOpen && (
-          <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} />
-        )}
-      </div>
+      <WorkspaceLayout flow={flow} aiAvailable={aiAvailable} openLanding={openLanding} />
     </WorkspaceContext.Provider>
   );
 }
 
 export function App() {
   const { uiLanguage } = useSettings();
+  // Re-render once a newly chosen interface language has downloaded.
+  const [, setLoadedCount] = useState(0);
+  useEffect(() => {
+    if (hasMessages(uiLanguage)) return;
+    void loadMessages(uiLanguage).then(() => setLoadedCount((count) => count + 1));
+  }, [uiLanguage]);
+  const language = hasMessages(uiLanguage) ? uiLanguage : 'en';
 
   return (
-    <I18nProvider language={uiLanguage ?? 'en'}>
+    <I18nProvider language={language}>
       <SpeechProvider>
         <SkipLink />
         <Shell />

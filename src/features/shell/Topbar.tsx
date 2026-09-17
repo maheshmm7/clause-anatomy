@@ -5,23 +5,29 @@ import { Logo } from '../../components/Logo';
 import { useI18n } from '../../i18n/I18nProvider';
 
 /**
- * Top bar: breadcrumb (workspace / paper / section), the paper's status, search and
- * "new paper". On small screens it also carries the menu button and the brand.
+ * Top bar: sidebar toggle, breadcrumb (workspace / paper / section), the paper's status,
+ * search, settings and "new paper". The toggle collapses the sidebar on large screens and
+ * opens the menu drawer on phones and tablets; small screens also show the brand.
  */
 export function Topbar({
   view,
   doc,
-  onOpenMenu,
+  wide,
+  sidebarExpanded,
+  onToggleSidebar,
   onOpenPalette,
+  onOpenSettings,
   onNavigate,
-  menuOpen,
 }: {
   view: View;
   doc: WorkspaceDoc | null;
-  onOpenMenu: () => void;
+  /** Large screen: the sidebar is part of the page rather than a drawer. */
+  wide: boolean;
+  sidebarExpanded: boolean;
+  onToggleSidebar: () => void;
   onOpenPalette: () => void;
+  onOpenSettings: () => void;
   onNavigate: (view: View) => void;
-  menuOpen: boolean;
 }) {
   const { t } = useI18n();
   const meta = VIEW_META[view];
@@ -33,18 +39,22 @@ export function Topbar({
     <header className="topbar">
       <button
         type="button"
-        className="icon-btn topbar__menu"
-        aria-expanded={menuOpen}
-        aria-controls="workspace-drawer"
-        onClick={onOpenMenu}
+        className="icon-btn topbar__toggle"
+        aria-expanded={sidebarExpanded}
+        aria-controls={wide ? 'workspace-sidebar' : 'workspace-drawer'}
+        onClick={onToggleSidebar}
       >
-        <Icon name="menu" />
-        <span className="visually-hidden">{t('openMenu')}</span>
+        <Icon name={wide ? 'sidebar' : 'menu'} />
+        <span className="visually-hidden">
+          {wide ? t(sidebarExpanded ? 'collapseSidebar' : 'expandSidebar') : t('openMenu')}
+        </span>
       </button>
-      <button type="button" className="topbar__brand" onClick={() => onNavigate('home')}>
-        <Logo size={30} />
-        <span className="visually-hidden">{t('appName')}</span>
-      </button>
+      {!wide && (
+        <a className="topbar__brand" href="#/">
+          <Logo size={32} />
+          <span className="visually-hidden">{t('appName')}</span>
+        </a>
+      )}
 
       <nav className="crumbs" aria-label={t('breadcrumbLabel')}>
         <ol>
@@ -89,6 +99,10 @@ export function Topbar({
           <kbd className="kbd" aria-hidden="true">
             Ctrl K
           </kbd>
+        </button>
+        <button type="button" className="icon-btn" onClick={onOpenSettings}>
+          <Icon name="sliders" />
+          <span className="visually-hidden">{t('openSettings')}</span>
         </button>
         {view !== 'home' && (
           <button

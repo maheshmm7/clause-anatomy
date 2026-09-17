@@ -1,38 +1,39 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { hi } from '../i18n/messages/hi';
+import { te } from '../i18n/messages/te';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { SettingsProvider } from '../settings/SettingsProvider';
 import { expectNoAxeViolations, stubFetch, type FakeRoute } from '../test/helpers';
-import { te } from '../i18n/messages/te';
 import { App } from './App';
 
-const NATIVE_NAMES = { en: 'English', hi: 'हिन्दी', te: 'తెలుగు' } as const;
 const RENTAL_TITLE = 'Rent agreement (renting a flat)';
+const HOME_TITLE = 'Read the fine print. Understand every clause.';
 
 type User = ReturnType<typeof userEvent.setup>;
 
-/** Renders the app and, unless `uiLanguage` is null, picks it on the landing page. */
+/** Renders the app at a hash route (the workspace by default) with a stored language. */
 async function renderApp({
   aiAvailable = false,
   uiLanguage = 'en',
+  hash = '#/workspace',
   routes = {},
 }: {
   aiAvailable?: boolean;
   uiLanguage?: 'en' | 'hi' | 'te' | null;
+  hash?: string;
   routes?: Record<string, FakeRoute | FakeRoute[]>;
 } = {}) {
+  if (uiLanguage) window.localStorage.setItem('clause-anatomy:uiLanguage', uiLanguage);
+  window.history.replaceState(null, '', hash);
   const fetch = stubFetch({ '/api/health': { body: { status: 'ok', aiAvailable } }, ...routes });
   const view = render(
     <SettingsProvider>
       <App />
     </SettingsProvider>,
   );
-  const user = userEvent.setup();
-  if (uiLanguage) {
-    await user.click(screen.getByRole('button', { name: new RegExp(NATIVE_NAMES[uiLanguage]) }));
-  }
-  return { ...view, ...fetch, user };
+  return { ...view, ...fetch, user: userEvent.setup() };
 }
 
 const sections = () => within(screen.getByRole('navigation', { name: 'Workspace sections' }));
@@ -52,37 +53,88 @@ async function openRentalExample(user: User) {
   return screen.findByRole('heading', { level: 1, name: RENTAL_TITLE });
 }
 
-describe('landing page', () => {
-  it('asks for a language in all three scripts and remembers the choice', async () => {
-    const { user, container } = await renderApp({ uiLanguage: null });
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Choose your language');
+/** Large-screen layout (jsdom has no media queries). */
+function stubWideScreen() {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('min-width: 64rem'),
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe('home page', () => {
+  it('introduces the product with a clear way into the workspace', async () => {
+    const { user, container } = await renderApp({ hash: '#/' });
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Understand any legal paper, clause by clause.',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { level: 2, name: /workspace that takes every clause apart/ }),
+    ).toBeVisible();
+    expect(screen.getByText(/Open source under the MIT License/)).toHaveTextContent(
+      String(new Date().getFullYear()),
+    );
     await expectNoAxeViolations(container);
 
-    await user.click(screen.getByRole('button', { name: /हिन्दी/ }));
+    await user.click(screen.getAllByRole('link', { name: /Open the workspace/ })[0]!);
+    expect(await screen.findByRole('heading', { level: 1, name: HOME_TITLE })).toBeVisible();
+    expect(window.location.hash).toBe('#/workspace');
 
+    // Browser Back returns to the home page.
+    window.history.back();
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'बारीक लिखावट पढ़ें। हर धारा समझें।' }),
+      await screen.findByRole('heading', { level: 1, name: /Understand any legal paper/ }),
     ).toBeVisible();
+  });
+
+  it('opens an example straight from the home page', async () => {
+    const { user } = await renderApp({ hash: '#/' });
+    await user.click(screen.getByRole('button', { name: /See an example/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: RENTAL_TITLE })).toBeVisible();
+    expect(window.location.hash).toBe('#/workspace/overview');
+  });
+
+  it('changes the interface language from the header dropdown and remembers it', async () => {
+    const { user } = await renderApp({ hash: '#/' });
+    const language = screen.getByRole('combobox', { name: 'App language' });
+    await user.click(language);
+    await user.click(screen.getByRole('option', { name: /हिन्दी/ }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: hi.heroTitle })).toBeVisible();
     expect(document.documentElement.lang).toBe('hi');
     expect(window.localStorage.getItem('clause-anatomy:uiLanguage')).toBe('hi');
   });
 
-  it('can be reopened from the workspace and marks the current language', async () => {
-    const { user } = await renderApp();
-    await user.click(screen.getByRole('button', { name: /Language page/ }));
-    expect(screen.getByRole('button', { name: /English/ })).toHaveAttribute('aria-current', 'true');
-
-    await user.click(screen.getByRole('button', { name: /తెలుగు/ }));
+  it('follows the browser language on a first visit', async () => {
+    vi.spyOn(window.navigator, 'languages', 'get').mockReturnValue(['te-IN', 'en']);
+    await renderApp({ hash: '#/', uiLanguage: null });
+    expect(await screen.findByRole('heading', { level: 1, name: te.heroTitle })).toBeVisible();
     expect(document.documentElement.lang).toBe('te');
-    expect(await screen.findByRole('navigation', { name: te.navMainLabel })).toBeVisible();
   });
 
-  it('goes back to the landing page with the browser Back button', async () => {
-    await renderApp();
-    expect(screen.getByRole('heading', { level: 1, name: /Read the fine print/ })).toBeVisible();
-    window.history.back();
+  it('has privacy, terms, disclaimer and accessibility pages', async () => {
+    const { user, container } = await renderApp({ hash: '#/terms' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Terms of use' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: /Acceptable use/ })).toBeVisible();
+    await expectNoAxeViolations(container);
+
+    const footer = within(screen.getByRole('contentinfo'));
+    await user.click(footer.getByRole('link', { name: 'Privacy policy' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible();
+    expect(document.title).toBe('Privacy policy · Clause Anatomy');
+
+    await user.click(screen.getByRole('link', { name: /Back to home/ }));
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Choose your language/ }),
+      await screen.findByRole('heading', { level: 1, name: /Understand any legal paper/ }),
     ).toBeVisible();
   });
 });
@@ -145,14 +197,50 @@ describe('workspace home', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The AI is busy');
   });
 
-  it('applies display settings to the whole page', async () => {
+  it('keeps every preference in one settings dialog', async () => {
     const { user } = await renderApp();
-    await user.click(screen.getByRole('radio', { name: 'Dark' }));
+    // Settings opens from the top bar and from the sidebar.
+    const openers = screen.getAllByRole('button', { name: 'Settings' });
+    expect(openers).toHaveLength(2);
+    await user.click(openers[0]!);
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }));
+    await expectNoAxeViolations(screen.getByRole('dialog'));
+
+    await user.click(dialog.getByRole('radio', { name: /Dark/ }));
     expect(document.documentElement.dataset.theme).toBe('dark');
-    await user.click(screen.getByRole('radio', { name: 'Large text' }));
+    await user.click(dialog.getByRole('radio', { name: 'Large text' }));
     expect(document.documentElement.dataset.textSize).toBe('large');
-    await user.click(screen.getByRole('radio', { name: 'Auto' }));
+    await user.click(dialog.getByRole('radio', { name: /Auto/ }));
     expect(document.documentElement.dataset.theme).toBeUndefined();
+
+    await user.click(dialog.getByRole('combobox', { name: 'Explain in' }));
+    await user.click(screen.getByRole('option', { name: /தமிழ்/ }));
+    expect(window.localStorage.getItem('clause-anatomy:explanationLanguage')).toBe('ta');
+
+    // The footer "Close" button (the header also has an icon-only one).
+    await user.click(dialog.getAllByRole('button', { name: 'Close' })[1]!);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('collapses and expands the sidebar on large screens, and remembers it', async () => {
+    stubWideScreen();
+    const { user } = await renderApp();
+    const toggle = screen.getByRole('button', { name: 'Collapse sidebar' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAttribute('aria-controls', 'workspace-sidebar');
+
+    await user.click(toggle);
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(document.querySelector('.rail--collapsed')).not.toBeNull();
+    // Collapsed links keep their accessible names.
+    expect(sections().getByRole('button', { name: /^Workspace/ })).toBeVisible();
+    expect(window.localStorage.getItem('clause-anatomy:sidebar')).toBe('collapsed');
+
+    await user.click(screen.getByRole('button', { name: 'Expand sidebar' }));
+    expect(document.querySelector('.rail--collapsed')).toBeNull();
   });
 });
 
@@ -211,11 +299,15 @@ describe('dashboard journey with the rent agreement example', { timeout: 30_000 
 
     await user.click(screen.getByRole('radio', { name: 'Flagged' }));
     const jump = screen.getByRole('combobox', { name: 'Jump to clause' });
-    expect(within(jump).getAllByRole('option')).toHaveLength(1);
-    await user.click(screen.getByRole('radio', { name: 'Not understood' }));
+    await user.click(jump);
     expect(
-      within(screen.getByRole('combobox', { name: 'Jump to clause' })).getByRole('option'),
-    ).toHaveTextContent('Monthly rent and late fee');
+      within(screen.getByRole('listbox', { name: 'Jump to clause' })).getAllByRole('option'),
+    ).toHaveLength(1);
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('radio', { name: 'Not understood' }));
+    expect(screen.getByRole('combobox', { name: 'Jump to clause' })).toHaveTextContent(
+      'Monthly rent and late fee',
+    );
     await user.type(screen.getByRole('searchbox', { name: 'Search clauses' }), 'zzzz');
     expect(screen.getByText('No clauses match.')).toBeVisible();
 

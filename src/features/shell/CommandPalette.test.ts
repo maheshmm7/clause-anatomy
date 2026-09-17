@@ -20,7 +20,8 @@ describe('command palette', () => {
     const items = buildPaletteItems(initialWorkspace, t, {
       go: vi.fn(),
       toggleTheme: vi.fn(),
-      openLanguagePage: vi.fn(),
+      openSettings: vi.fn(),
+      openLanding: vi.fn(),
     });
     expect(items.filter((item) => item.group === 'navigation').map((item) => item.label)).toEqual([
       'Workspace',
@@ -34,7 +35,8 @@ describe('command palette', () => {
     const items = buildPaletteItems(state, t, {
       go,
       toggleTheme: vi.fn(),
-      openLanguagePage: vi.fn(),
+      openSettings: vi.fn(),
+      openLanding: vi.fn(),
     });
 
     // Without a query: sections, first clauses and actions, but no word list.

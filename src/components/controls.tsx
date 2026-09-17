@@ -1,5 +1,11 @@
 import { useId } from 'react';
-import { LANGUAGE_INFO, UI_LANGUAGES, type UiLanguage } from '../../shared/languages';
+import {
+  EXPLANATION_LANGUAGES,
+  LANGUAGE_INFO,
+  UI_LANGUAGES,
+  type ExplanationLanguage,
+  type UiLanguage,
+} from '../../shared/languages';
 import type { AnalysisResult } from '../../shared/schema';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages/en';
@@ -14,13 +20,12 @@ import {
   type ThemePreference,
 } from '../settings/SettingsProvider';
 import { Icon, type IconName } from './Icon';
+import { Select } from './Select';
 
 /**
  * Reusable brutalist controls. All choice groups are native radio inputs inside a
  * fieldset, so keyboard (arrow keys) and screen-reader behaviour come for free.
  */
-
-export const LANGUAGE_GLYPHS: Record<UiLanguage, string> = { en: 'A', hi: 'अ', te: 'అ' };
 
 interface SegmentOption<T extends string> {
   value: T;
@@ -72,6 +77,7 @@ export function Segmented<T extends string>({
   );
 }
 
+/** Interface language, each option written in its own script. */
 export function LanguageSwitch() {
   const { t, language } = useI18n();
   const { setUiLanguage } = useSettings();
@@ -79,14 +85,52 @@ export function LanguageSwitch() {
     <Segmented<UiLanguage>
       legend={t('uiLanguageLabel')}
       value={language}
-      compact
       options={UI_LANGUAGES.map((option) => ({
         value: option,
-        label: LANGUAGE_GLYPHS[option],
+        label: LANGUAGE_INFO[option].nativeName,
         lang: option,
-        title: LANGUAGE_INFO[option].nativeName,
       }))}
       onChange={setUiLanguage}
+    />
+  );
+}
+
+/** Compact interface-language dropdown for page headers. */
+export function LanguageSelect() {
+  const { t, language } = useI18n();
+  const { setUiLanguage } = useSettings();
+  return (
+    <Select<UiLanguage>
+      label={t('uiLanguageLabel')}
+      hideLabel
+      compact
+      value={language}
+      options={UI_LANGUAGES.map((option) => ({
+        value: option,
+        label: LANGUAGE_INFO[option].nativeName,
+        lang: option,
+      }))}
+      onChange={setUiLanguage}
+    />
+  );
+}
+
+/** The language Gemini writes explanations in (10 Indian languages). */
+export function ExplanationLanguageSelect() {
+  const { t } = useI18n();
+  const { explanationLanguage, setExplanationLanguage } = useSettings();
+  return (
+    <Select<ExplanationLanguage>
+      label={t('explanationLanguageLabel')}
+      labelIcon="globe"
+      value={explanationLanguage}
+      options={EXPLANATION_LANGUAGES.map((option) => ({
+        value: option,
+        label: LANGUAGE_INFO[option].nativeName,
+        hint: option === 'en' ? undefined : LANGUAGE_INFO[option].englishName,
+        lang: option,
+      }))}
+      onChange={setExplanationLanguage}
     />
   );
 }
@@ -104,12 +148,10 @@ export function ThemeSwitch() {
     <Segmented<ThemePreference>
       legend={t('themeLabel')}
       value={theme}
-      compact
       options={THEMES.map((option) => ({
         value: option,
-        label: '',
+        label: t(THEME_META[option].key),
         icon: THEME_META[option].icon,
-        title: t(THEME_META[option].key),
       }))}
       onChange={setTheme}
     />
@@ -129,7 +171,6 @@ export function TextSizeSwitch() {
     <Segmented<TextSize>
       legend={t('textSizeLabel')}
       value={textSize}
-      compact
       options={TEXT_SIZES.map((option) => ({
         value: option,
         label: TEXT_SIZE_META[option].label,

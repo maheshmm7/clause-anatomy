@@ -15,8 +15,7 @@ export const THEMES: readonly ThemePreference[] = ['system', 'light', 'dark'];
 export const TEXT_SIZES: readonly TextSize[] = ['normal', 'large', 'xlarge'];
 
 export interface Settings {
-  /** `null` until the user picks a language on their first visit. */
-  uiLanguage: UiLanguage | null;
+  uiLanguage: UiLanguage;
   explanationLanguage: ExplanationLanguage;
   readingLevel: ReadingLevel;
   theme: ThemePreference;
@@ -35,18 +34,28 @@ function stored<T extends string>(key: string, allowed: readonly T[], fallback: 
   return (allowed as readonly string[]).includes(value ?? '') ? (value as T) : fallback;
 }
 
-function storedUiLanguage(): UiLanguage | null {
-  const value = readPreference('uiLanguage');
-  return isUiLanguage(value) ? value : null;
+/** First visit: follow the browser's language when we support it, else English. */
+export function detectUiLanguage(preferred: readonly string[]): UiLanguage {
+  for (const tag of preferred) {
+    const base = tag.toLowerCase().split('-')[0];
+    if (isUiLanguage(base)) return base;
+  }
+  return 'en';
 }
 
-function storedExplanationLanguage(fallback: UiLanguage | null): ExplanationLanguage {
+export function storedUiLanguage(): UiLanguage {
+  const value = readPreference('uiLanguage');
+  if (isUiLanguage(value)) return value;
+  return detectUiLanguage(typeof navigator === 'undefined' ? [] : navigator.languages);
+}
+
+function storedExplanationLanguage(fallback: UiLanguage): ExplanationLanguage {
   const value = readPreference('explanationLanguage');
-  return isExplanationLanguage(value) ? value : (fallback ?? 'en');
+  return isExplanationLanguage(value) ? value : fallback;
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [uiLanguage, setUi] = useState<UiLanguage | null>(storedUiLanguage);
+  const [uiLanguage, setUi] = useState<UiLanguage>(storedUiLanguage);
   const [explanationLanguage, setExplanation] = useState<ExplanationLanguage>(() =>
     storedExplanationLanguage(storedUiLanguage()),
   );

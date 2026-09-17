@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { VerifiedPoint } from '../../shared/schema';
-import { formatIsoDate, formatMessage, MESSAGES } from '../i18n/format';
+import { formatIsoDate, formatMessage, loadMessages } from '../i18n/format';
+import { en } from '../i18n/messages/en';
+import { hi } from '../i18n/messages/hi';
+import { te } from '../i18n/messages/te';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { buildBriefText, collectLawyerQuestions } from './brief';
 import { detectScriptLanguage, sha256Hex } from './browser';
@@ -138,6 +141,7 @@ describe('i18n', () => {
     [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]!).sort();
 
   it('translates every key into every UI language with the same placeholders', () => {
+    const MESSAGES = { en, hi, te };
     const keys = Object.keys(MESSAGES.en) as (keyof typeof MESSAGES.en)[];
     for (const language of ['hi', 'te'] as const) {
       expect(Object.keys(MESSAGES[language]).sort()).toEqual([...keys].sort());
@@ -148,6 +152,14 @@ describe('i18n', () => {
         );
       }
     }
+  });
+
+  it('loads Hindi and Telugu on demand and falls back to English until then', async () => {
+    expect(formatMessage('te', 'openSettings')).toBe(en.openSettings);
+    await loadMessages('te');
+    expect(formatMessage('te', 'openSettings')).toBe(te.openSettings);
+    await loadMessages('en');
+    expect(formatMessage('en', 'openSettings')).toBe('Settings');
   });
 
   it('fills placeholders and leaves unknown ones visible', () => {

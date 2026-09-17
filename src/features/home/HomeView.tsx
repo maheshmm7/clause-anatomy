@@ -1,12 +1,8 @@
 import { useId, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
-import {
-  EXPLANATION_LANGUAGES,
-  LANGUAGE_INFO,
-  isExplanationLanguage,
-} from '../../../shared/languages';
 import { LIMITS } from '../../../shared/limits';
 import type { FlowError, PendingUpload } from '../../app/flow';
 import { useWorkspace } from '../../app/WorkspaceContext';
+import { ExplanationLanguageSelect } from '../../components/controls';
 import { Icon, type IconName } from '../../components/Icon';
 import { Notice, Panel } from '../../components/ui';
 import { useFocusOnMount } from '../../hooks/dom';
@@ -14,7 +10,6 @@ import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/messages/en';
 import { needsAttention } from '../../lib/perspective';
 import { SAMPLES, type SampleId } from '../../samples';
-import { useSettings } from '../../settings/SettingsProvider';
 import { ConsentPanel } from './ConsentPanel';
 
 type Drawer = 'paste' | 'samples' | null;
@@ -81,14 +76,13 @@ const STEPS: readonly { title: MessageKey; hint: MessageKey }[] = [
 export function HomeView(props: HomeViewProps) {
   const { t } = useI18n();
   const { state, go, dispatch } = useWorkspace();
-  const { explanationLanguage, setExplanationLanguage } = useSettings();
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
   const [drawer, setDrawer] = useState<Drawer>(null);
   const [text, setText] = useState('');
   const [dropActive, setDropActive] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const ids = { paste: useId(), samples: useId(), count: useId(), language: useId() };
+  const ids = { paste: useId(), samples: useId(), count: useId() };
   const liveDisabled = props.aiAvailable === false;
 
   if (props.pending) {
@@ -156,27 +150,7 @@ export function HomeView(props: HomeViewProps) {
 
       <div className="home-grid">
         <Panel number="01" title={t('inputTitle')} icon="plus" className="panel--intake">
-          <div className="field-row">
-            <label htmlFor={ids.language} className="field-row__label">
-              <Icon name="globe" /> {t('explanationLanguageLabel')}
-            </label>
-            <select
-              id={ids.language}
-              value={explanationLanguage}
-              onChange={(event) => {
-                if (isExplanationLanguage(event.target.value)) {
-                  setExplanationLanguage(event.target.value);
-                }
-              }}
-            >
-              {EXPLANATION_LANGUAGES.map((language) => (
-                <option key={language} value={language} lang={language}>
-                  {LANGUAGE_INFO[language].nativeName}
-                  {language === 'en' ? '' : ` (${LANGUAGE_INFO[language].englishName})`}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ExplanationLanguageSelect />
 
           <div className="intake-grid">
             <IntakeTile

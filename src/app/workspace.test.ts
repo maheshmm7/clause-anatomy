@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RENTAL_B_SAMPLE } from '../samples/rental-b';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { flowReducer, initialFlowState, type LoadedDocument, type PendingUpload } from './flow';
-import { readHistoryEntry } from './navigation';
+import { parseRoute, readRouteDocId, routeToHash, type Route } from './navigation';
 import {
   activeDoc,
   initialWorkspace,
@@ -170,15 +170,32 @@ describe('document flow reducer', () => {
   });
 });
 
-describe('browser history entries', () => {
-  it('reads valid entries and falls back safely for anything else', () => {
-    expect(
-      readHistoryEntry({ clauseAnatomy: { screen: 'app', view: 'risks', docId: 'a' } }),
-    ).toEqual({ screen: 'app', view: 'risks', docId: 'a' });
-    expect(
-      readHistoryEntry({ clauseAnatomy: { screen: 'app', view: 'toString', docId: 3 } }),
-    ).toEqual({ screen: 'app', view: 'home', docId: null });
-    expect(readHistoryEntry(null)).toEqual({ screen: 'welcome' });
-    expect(readHistoryEntry({ other: true })).toEqual({ screen: 'welcome' });
+describe('routes', () => {
+  it('reads pages from the URL hash and falls back safely', () => {
+    expect(parseRoute('')).toEqual({ page: 'landing' });
+    expect(parseRoute('#/')).toEqual({ page: 'landing' });
+    expect(parseRoute('#/privacy')).toEqual({ page: 'legal', doc: 'privacy' });
+    expect(parseRoute('#/workspace')).toEqual({ page: 'app', view: 'home' });
+    expect(parseRoute('#/workspace/risks')).toEqual({ page: 'app', view: 'risks' });
+    expect(parseRoute('#/workspace/toString')).toEqual({ page: 'app', view: 'home' });
+    expect(parseRoute('#/nowhere')).toEqual({ page: 'landing' });
+    expect(parseRoute('#main')).toEqual({ page: 'landing' });
+  });
+
+  it('writes every route back to the same hash', () => {
+    const routes: Route[] = [
+      { page: 'landing' },
+      { page: 'legal', doc: 'accessibility' },
+      { page: 'app', view: 'home' },
+      { page: 'app', view: 'compare' },
+    ];
+    for (const route of routes) expect(parseRoute(routeToHash(route))).toEqual(route);
+    expect(routeToHash({ page: 'app', view: 'home' })).toBe('#/workspace');
+  });
+
+  it('keeps the open paper id out of the URL, in history state only', () => {
+    expect(readRouteDocId({ clauseAnatomyDoc: 'paper-1' })).toBe('paper-1');
+    expect(readRouteDocId({ clauseAnatomyDoc: 7 })).toBeNull();
+    expect(readRouteDocId(null)).toBeNull();
   });
 });
