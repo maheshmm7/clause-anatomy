@@ -18,23 +18,46 @@ import {
 interface SpeechContextValue {
   supported: boolean;
   speakingId: string | null;
+  /** True only when the device has a voice for the language (no wrong-accent gibberish). */
+  canSpeak: (languageTag: string) => boolean;
   speak: (id: string, text: string, languageTag: string) => void;
   stop: () => void;
 }
 
 const SpeechContext = createContext<SpeechContextValue | null>(null);
 
-function pickVoice(languageTag: string): SpeechSynthesisVoice | undefined {
-  const voices = window.speechSynthesis.getVoices();
+type VoiceLike = Pick<SpeechSynthesisVoice, 'lang'>;
+
+export function pickVoice<T extends VoiceLike>(
+  voices: readonly T[],
+  languageTag: string,
+): T | undefined {
   const normalized = (lang: string): string => lang.replace('_', '-').toLowerCase();
   const exact = voices.find((voice) => normalized(voice.lang) === languageTag.toLowerCase());
-  const base = languageTag.slice(0, 2).toLowerCase();
-  return exact ?? voices.find((voice) => normalized(voice.lang).startsWith(base));
+  const base = `${languageTag.slice(0, 2).toLowerCase()}-`;
+  return exact ?? voices.find((voice) => `${normalized(voice.lang)}-`.startsWith(base));
 }
 
 export function SpeechProvider({ children }: { children: ReactNode }) {
   const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
   const [speakingId, setSpeakingId] = useState<string | null>(null);
+  // Voices load asynchronously in most browsers.
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() =>
+    supported ? window.speechSynthesis.getVoices() : [],
+  );
+
+  useEffect(() => {
+    if (!supported) return undefined;
+    const synth = window.speechSynthesis;
+    const update = (): void => setVoices(synth.getVoices());
+    synth.addEventListener?.('voiceschanged', update);
+    return () => synth.removeEventListener?.('voiceschanged', update);
+  }, [supported]);
+
+  const canSpeak = useCallback(
+    (languageTag: string) => supported && pickVoice(voices, languageTag) !== undefined,
+    [supported, voices],
+  );
 
   const stop = useCallback(() => {
     if (supported) window.speechSynthesis.cancel();
@@ -49,7 +72,7 @@ export function SpeechProvider({ children }: { children: ReactNode }) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = languageTag;
-      const voice = pickVoice(languageTag);
+      const voice = pickVoice(voices, languageTag);
       if (voice) utterance.voice = voice;
       utterance.rate = 0.9; // Slightly slower is easier to follow.
       const finish = (): void => setSpeakingId((current) => (current === id ? null : current));
@@ -58,12 +81,12 @@ export function SpeechProvider({ children }: { children: ReactNode }) {
       window.speechSynthesis.speak(utterance);
       setSpeakingId(id);
     },
-    [supported],
+    [supported, voices],
   );
 
   const value = useMemo(
-    () => ({ supported, speakingId, speak, stop }),
-    [supported, speakingId, speak, stop],
+    () => ({ supported, speakingId, canSpeak, speak, stop }),
+    [supported, speakingId, canSpeak, speak, stop],
   );
   return <SpeechContext.Provider value={value}>{children}</SpeechContext.Provider>;
 }

@@ -1,4 +1,13 @@
-import { lazy, Suspense, useCallback, useId, useReducer, useRef, type KeyboardEvent } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useId,
+  useReducer,
+  useRef,
+  type KeyboardEvent,
+} from 'react';
 import { ApiClientError, api } from '../../api/client';
 import type { LoadedDocument } from '../../app/flow';
 import { Icon, type IconName } from '../../components/Icon';
@@ -44,6 +53,19 @@ export function ResultScreen({
   const baseId = useId();
   const { analysis } = document;
   const askCounter = useRef(0);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const shownTab = useRef(state.tab);
+
+  // Switching sections brings the new section into view (important with the phone bottom bar).
+  useEffect(() => {
+    if (shownTab.current === state.tab) return;
+    shownTab.current = state.tab;
+    const panel = panelRef.current;
+    if (panel && panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ block: 'start' });
+    else if (panel && panel.getBoundingClientRect().top > window.innerHeight * 0.6) {
+      panel.scrollIntoView({ block: 'start' });
+    }
+  }, [state.tab]);
 
   const ask = useCallback(
     async (question: string) => {
@@ -140,6 +162,7 @@ export function ResultScreen({
 
       <div
         id={`${baseId}-panel`}
+        ref={panelRef}
         key={state.tab}
         role="tabpanel"
         aria-labelledby={`${baseId}-tab-${state.tab}`}

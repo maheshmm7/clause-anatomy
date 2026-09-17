@@ -69,15 +69,16 @@ export function SpeakButton({
   language: ExplanationLanguage;
 }) {
   const { t } = useI18n();
-  const { supported, speakingId, speak, stop } = useSpeech();
-  if (!supported) return null;
+  const { canSpeak, speakingId, speak, stop } = useSpeech();
+  const tag = LANGUAGE_INFO[language].speechTag;
+  if (!canSpeak(tag)) return null;
   const speaking = speakingId === id;
   return (
     <button
       type="button"
       className="button button--ghost button--small"
       aria-pressed={speaking}
-      onClick={() => (speaking ? stop() : speak(id, text, LANGUAGE_INFO[language].speechTag))}
+      onClick={() => (speaking ? stop() : speak(id, text, tag))}
     >
       <Icon name={speaking ? 'stop' : 'volume'} />
       {speaking ? t('stopListening') : t('listen')}

@@ -22,8 +22,7 @@ const PHOTO = {
   fileName: 'page.jpg',
 };
 
-function renderApp(routes: Record<string, FakeRoute | FakeRoute[]>) {
-  window.localStorage.setItem('clause-anatomy:uiLanguage', 'en');
+async function renderApp(routes: Record<string, FakeRoute | FakeRoute[]>) {
   const fetch = stubFetch({
     '/api/health': { body: { status: 'ok', aiAvailable: true } },
     ...routes,
@@ -33,7 +32,9 @@ function renderApp(routes: Record<string, FakeRoute | FakeRoute[]>) {
       <App />
     </SettingsProvider>,
   );
-  return { ...fetch, user: userEvent.setup() };
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: /English/ }));
+  return { ...fetch, user };
 }
 
 async function uploadPhoto(user: ReturnType<typeof userEvent.setup>) {
@@ -51,7 +52,7 @@ describe('photo upload flow', () => {
 
   it('asks for consent, transcribes, redacts and explains', async () => {
     readDocumentFile.mockResolvedValue(PHOTO);
-    const { user, calls } = renderApp({
+    const { user, calls } = await renderApp({
       '/api/extract': { body: { quality: 'partial', text: `${RENTAL_SAMPLE.text}\n[UNREADABLE]` } },
       '/api/analyze': { body: RENTAL_SAMPLE.analyses.en },
     });
@@ -80,7 +81,7 @@ describe('photo upload flow', () => {
 
   it('lets the reader cancel before anything is sent', async () => {
     readDocumentFile.mockResolvedValue(PHOTO);
-    const { user, calls } = renderApp({});
+    const { user, calls } = await renderApp({});
     await uploadPhoto(user);
     await user.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(
@@ -94,7 +95,9 @@ describe('photo upload flow', () => {
 
   it('explains how to retake an unreadable photo', async () => {
     readDocumentFile.mockResolvedValue(PHOTO);
-    const { user } = renderApp({ '/api/extract': { body: { quality: 'unreadable', text: '' } } });
+    const { user } = await renderApp({
+      '/api/extract': { body: { quality: 'unreadable', text: '' } },
+    });
     await uploadPhoto(user);
     await user.click(await screen.findByRole('button', { name: /OK, read it/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -105,7 +108,7 @@ describe('photo upload flow', () => {
   it('shows file reading problems in plain words', async () => {
     const { ReadError } = await import('../features/input/readers');
     readDocumentFile.mockRejectedValue(new ReadError('error_fileTooLarge'));
-    const { user } = renderApp({});
+    const { user } = await renderApp({});
     await screen.findByRole('button', { name: /Upload a file/ });
     await user.upload(
       screen.getByLabelText('Upload a file', { selector: 'input' }),
@@ -117,7 +120,7 @@ describe('photo upload flow', () => {
   it('analyses text read from a digital PDF, and can be cancelled while working', async () => {
     readDocumentFile.mockResolvedValue({ kind: 'text', text: RENTAL_SAMPLE.text });
     let release: (() => void) | undefined;
-    const { user } = renderApp({ '/api/analyze': { body: RENTAL_SAMPLE.analyses.en } });
+    const { user } = await renderApp({ '/api/analyze': { body: RENTAL_SAMPLE.analyses.en } });
     const fetchMock = vi.mocked(fetch);
     const original = fetchMock.getMockImplementation();
     fetchMock.mockImplementation(async (input, init) => {

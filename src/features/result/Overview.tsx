@@ -1,4 +1,5 @@
 import { useId, type RefObject } from 'react';
+import { LANGUAGE_INFO } from '../../../shared/languages';
 import type { AnalysisResult, DocumentCategory } from '../../../shared/schema';
 import type { LoadedDocument } from '../../app/flow';
 import { Icon, type IconName } from '../../components/Icon';
@@ -139,9 +140,11 @@ export function Overview({
   onPerspectiveChange: (perspective: Perspective) => void;
   headingRef: RefObject<HTMLHeadingElement | null>;
 }) {
-  const { t, formatDate } = useI18n();
+  const { t, formatDate, language: uiLanguage } = useI18n();
   const { analysis } = document;
   const language = analysis.language;
+  // Switching the interface language does not re-explain the paper; say so plainly.
+  const showExplainedIn = !document.languageFallback && language !== uiLanguage;
   const attention = analysis.points.filter((point) => needsAttention(point, perspective)).length;
   const verified = analysis.points.filter((point) => point.verified).length;
   const unverified = analysis.points.length - verified;
@@ -242,6 +245,13 @@ export function Overview({
         )}
         {document.partialRead && <Notice tone="warning" title={t('partialReadWarning')} />}
         {document.languageFallback && <Notice tone="info" title={t('sampleFallbackNotice')} />}
+        {showExplainedIn && (
+          <Notice
+            tone="info"
+            icon="globe"
+            title={t('explainedIn', { language: LANGUAGE_INFO[language].nativeName })}
+          />
+        )}
         {unverified > 0 && (
           <Notice tone="warning" title={t('unverifiedCount', { count: unverified })} />
         )}

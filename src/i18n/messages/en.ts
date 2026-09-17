@@ -240,6 +240,11 @@ export const en = {
   askSuggestions: 'Try asking',
   checklistHint: 'Tick items as you finish them',
   understoodLabel: 'Understood',
+  languagePage: 'Open language page',
+  homeLabel: 'Go to the language page',
+  explainedIn:
+    'This paper is explained in {language}. To explain it in another language, start over.',
+  documentTitle: '{documentType} · Clause Anatomy',
 } as const;
 
 export type MessageKey = keyof typeof en;

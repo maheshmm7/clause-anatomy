@@ -6,6 +6,9 @@ import { afterEach, vi } from 'vitest';
 if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = function scrollIntoView() {};
 }
+if (typeof window !== 'undefined') {
+  window.scrollTo = () => undefined;
+}
 
 afterEach(() => {
   cleanup();

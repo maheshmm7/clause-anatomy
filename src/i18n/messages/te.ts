@@ -239,4 +239,9 @@ export const te: Messages = {
   askSuggestions: 'ఇలా అడగవచ్చు',
   checklistHint: 'పూర్తయినవాటికి టిక్ పెట్టండి',
   understoodLabel: 'అర్థమైంది',
+  languagePage: 'భాష పేజీ తెరవండి',
+  homeLabel: 'భాష పేజీకి వెళ్ళండి',
+  explainedIn:
+    'ఈ కాగితం {language} లో వివరించబడింది. వేరే భాషలో వివరణ కావాలంటే మళ్ళీ మొదలుపెట్టండి.',
+  documentTitle: '{documentType} · Clause Anatomy',
 };

@@ -236,4 +236,9 @@ export const hi: Messages = {
   askSuggestions: 'ऐसे पूछ सकते हैं',
   checklistHint: 'काम पूरा होने पर निशान लगाएँ',
   understoodLabel: 'समझ गए',
+  languagePage: 'भाषा पेज खोलें',
+  homeLabel: 'भाषा पेज पर जाएँ',
+  explainedIn:
+    'यह कागज़ {language} में समझाया गया है। दूसरी भाषा में समझने के लिए फिर से शुरू करें।',
+  documentTitle: '{documentType} · Clause Anatomy',
 };

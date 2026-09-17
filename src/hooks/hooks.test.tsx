@@ -24,7 +24,12 @@ function stubSpeechSynthesis() {
   const synth = {
     speak: vi.fn((utterance: FakeUtterance) => spoken.push(utterance)),
     cancel: vi.fn(),
-    getVoices: vi.fn(() => [{ lang: 'te_IN', name: 'Telugu' }]),
+    getVoices: vi.fn(() => [
+      { lang: 'te_IN', name: 'Telugu' },
+      { lang: 'en-IN', name: 'English (India)' },
+    ]),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   };
   vi.stubGlobal('speechSynthesis', synth);
   vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance);
@@ -162,5 +167,22 @@ describe('dom hooks', () => {
     expect(screen.getByRole('heading')).not.toHaveFocus();
     rerender(<Harness step={2} />);
     expect(screen.getByRole('heading')).toHaveFocus();
+  });
+});
+
+describe('pickVoice', () => {
+  const voices = [{ lang: 'en-US' }, { lang: 'hi_IN' }, { lang: 'tet' }];
+
+  it('matches exact tags, then the base language, never a different language', async () => {
+    const { pickVoice } = await import('./speech');
+    expect(pickVoice(voices, 'hi-IN')).toEqual({ lang: 'hi_IN' });
+    expect(pickVoice(voices, 'en-IN')).toEqual({ lang: 'en-US' });
+    expect(pickVoice(voices, 'te-IN')).toBeUndefined();
+  });
+
+  it('hides read-aloud when the device has no voice for the language', () => {
+    stubSpeechSynthesis();
+    render(<SpeakButton id="p1" text="ಬಾಡಿಗೆ" language="kn" />, { wrapper });
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

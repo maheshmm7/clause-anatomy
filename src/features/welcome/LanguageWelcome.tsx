@@ -1,9 +1,8 @@
 import { LANGUAGE_INFO, UI_LANGUAGES, type UiLanguage } from '../../../shared/languages';
 import { Icon } from '../../components/Icon';
+import { LANGUAGE_GLYPHS } from '../../components/LanguageMenu';
 import { Logo } from '../../components/Logo';
 import { useFocusOnMount } from '../../hooks/dom';
-
-const GLYPHS: Record<UiLanguage, string> = { en: 'A', hi: 'अ', te: 'అ' };
 
 /** Decorative floating "anatomy" labels that hint at what the app does. */
 const FLOATING_CHIPS = [
@@ -14,11 +13,24 @@ const FLOATING_CHIPS = [
   { text: 'మీరు చేయవచ్చు', tone: 'may', lang: 'te' },
 ] as const;
 
+const PROMISES: Record<UiLanguage, string> = {
+  en: 'Free · Private · A guide, not a lawyer',
+  hi: 'मुफ़्त · निजी · वकील नहीं, मार्गदर्शक',
+  te: 'ఉచితం · గోప్యం · లాయర్ కాదు, మార్గదర్శి',
+};
+
 /**
- * First screen on a first visit. It is intentionally multilingual (not yet translated),
- * so every reader can recognise their own language by its native name and script.
+ * The landing page, shown every time the app opens and reachable from the header.
+ * It is intentionally multilingual (not yet translated), so every reader can recognise
+ * their own language by its native name and script. The last used language is marked.
  */
-export function LanguageWelcome({ onChoose }: { onChoose: (language: UiLanguage) => void }) {
+export function LanguageWelcome({
+  current,
+  onChoose,
+}: {
+  current: UiLanguage | null;
+  onChoose: (language: UiLanguage) => void;
+}) {
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
 
   return (
@@ -50,10 +62,11 @@ export function LanguageWelcome({ onChoose }: { onChoose: (language: UiLanguage)
                 type="button"
                 className="language-choice"
                 lang={language}
+                aria-current={language === current ? 'true' : undefined}
                 onClick={() => onChoose(language)}
               >
                 <span className="language-choice__glyph" aria-hidden="true">
-                  {GLYPHS[language]}
+                  {LANGUAGE_GLYPHS[language]}
                 </span>
                 <span className="language-choice__text">
                   <span className="language-choice__native">
@@ -65,14 +78,17 @@ export function LanguageWelcome({ onChoose }: { onChoose: (language: UiLanguage)
                     </span>
                   )}
                 </span>
-                <Icon name="arrowRight" className="language-choice__arrow" />
+                <Icon
+                  name={language === current ? 'checkCircle' : 'arrowRight'}
+                  className="language-choice__arrow"
+                />
               </button>
             </li>
           ))}
         </ul>
-        <p className="welcome__promise">
+        <p className="welcome__promise" lang={current ?? 'en'}>
           <Icon name="shieldCheck" />
-          <span lang="en">Free · Private · Not a lawyer, a guide</span>
+          <span>{PROMISES[current ?? 'en']}</span>
         </p>
       </div>
     </div>
