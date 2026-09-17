@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 import { LANGUAGE_INFO, type ExplanationLanguage } from '../../shared/languages';
 import { useSpeech } from '../hooks/speech';
 import { useI18n } from '../i18n/I18nProvider';
@@ -14,7 +14,7 @@ const TONE_ICONS: Record<Tone, IconName> = {
 };
 
 /**
- * A message box. Tone is conveyed by icon, colour AND the title text, never colour alone.
+ * A message block. Tone is conveyed by icon, colour AND the title text, never colour alone.
  * `urgent` messages use role="alert" so screen readers announce them immediately.
  */
 export function Notice({
@@ -32,7 +32,9 @@ export function Notice({
 }) {
   return (
     <div className={`notice notice--${tone}`} role={urgent ? 'alert' : 'status'}>
-      <Icon name={icon ?? TONE_ICONS[tone]} className="notice__icon" />
+      <span className="notice__icon">
+        <Icon name={icon ?? TONE_ICONS[tone]} />
+      </span>
       <div className="notice__body">
         {title && <p className="notice__title">{title}</p>}
         {children}
@@ -46,7 +48,7 @@ export function Badge({
   icon,
   children,
 }: {
-  tone: Tone | 'neutral';
+  tone: Tone | 'neutral' | 'ink';
   icon?: IconName;
   children: ReactNode;
 }) {
@@ -58,7 +60,84 @@ export function Badge({
   );
 }
 
-/** Reads text aloud in the right language; hidden where the browser cannot speak. */
+/**
+ * A dashboard panel: numbered editorial header, hard border, offset shadow.
+ * The heading level is configurable so every view keeps a correct outline.
+ */
+export function Panel({
+  title,
+  number,
+  icon,
+  actions,
+  children,
+  className,
+  headingLevel = 'h2',
+}: {
+  title: string;
+  number?: string;
+  icon?: IconName;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  headingLevel?: 'h2' | 'h3';
+}) {
+  const headingId = useId();
+  const Heading = headingLevel;
+  return (
+    <section className={className ? `panel ${className}` : 'panel'} aria-labelledby={headingId}>
+      <header className="panel__head">
+        {number && (
+          <span className="panel__number" aria-hidden="true">
+            {number}
+          </span>
+        )}
+        <Heading id={headingId} className="panel__title">
+          {icon && <Icon name={icon} />}
+          <span>{title}</span>
+        </Heading>
+        {actions && <div className="panel__actions">{actions}</div>}
+      </header>
+      <div className="panel__body">{children}</div>
+    </section>
+  );
+}
+
+/** The title block of every workspace view (owns the view's single h1). */
+export function ViewHeader({
+  number,
+  kicker,
+  title,
+  titleLang,
+  actions,
+  children,
+  headingRef,
+}: {
+  number: string;
+  kicker: string;
+  title: string;
+  titleLang?: string;
+  actions?: ReactNode;
+  children?: ReactNode;
+  headingRef?: Ref<HTMLHeadingElement>;
+}) {
+  return (
+    <header className="view-header">
+      <p className="kicker">
+        <span className="kicker__number">{number}</span>
+        <span>{kicker}</span>
+      </p>
+      <div className="view-header__row">
+        <h1 ref={headingRef} tabIndex={-1} className="view-header__title" lang={titleLang}>
+          {title}
+        </h1>
+        {actions && <div className="view-header__actions">{actions}</div>}
+      </div>
+      {children}
+    </header>
+  );
+}
+
+/** Reads text aloud in the right language; hidden where the device has no such voice. */
 export function SpeakButton({
   id,
   text,
@@ -76,7 +155,7 @@ export function SpeakButton({
   return (
     <button
       type="button"
-      className="button button--ghost button--small"
+      className="btn btn--small"
       aria-pressed={speaking}
       onClick={() => (speaking ? stop() : speak(id, text, tag))}
     >
@@ -86,46 +165,63 @@ export function SpeakButton({
   );
 }
 
+/**
+ * A wide table that may scroll sideways on small screens. It is focusable and named,
+ * so keyboard users can scroll it too.
+ */
+export function ScrollArea({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="table-wrap" role="region" aria-label={label} tabIndex={0}>
+      {children}
+    </div>
+  );
+}
+
 export function Spinner() {
   return <span className="spinner" aria-hidden="true" />;
 }
 
-export function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+export function ExternalLink({
+  href,
+  children,
+  className,
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+}) {
   const { t } = useI18n();
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer">
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
       {children}
       <span className="visually-hidden"> {t('opensNewTab')}</span>
     </a>
   );
 }
 
-/** Free legal aid contacts (India). Shown for urgent papers and on the next-steps page. */
-export function LegalHelpCard() {
+/** Free legal aid contacts (India). */
+export function LegalHelpPanel({ number }: { number?: string }) {
   const { t } = useI18n();
   return (
-    <section className="card help-card" aria-labelledby="legal-help-heading">
-      <h2 id="legal-help-heading" className="card__title">
-        <Icon name="shield" /> {t('helpHeading')}
-      </h2>
+    <Panel title={t('helpHeading')} number={number} icon="shield" className="panel--help">
       <p>{t('helpBody')}</p>
-      <ul className="help-card__actions">
+      <ul className="action-list">
         <li>
-          <a className="button button--primary" href="tel:15100">
+          <a className="btn btn--primary" href="tel:15100">
             <Icon name="phone" /> {t('helpCall')}
           </a>
         </li>
         <li>
-          <ExternalLink href="https://nalsa.gov.in/">
+          <ExternalLink href="https://nalsa.gov.in/" className="btn">
             <Icon name="globe" /> {t('helpWebsite')}
           </ExternalLink>
         </li>
         <li>
-          <a href="tel:112">
+          <a className="btn" href="tel:112">
             <Icon name="phone" /> {t('helpEmergency')}
           </a>
         </li>
       </ul>
-    </section>
+    </Panel>
   );
 }

@@ -25,16 +25,30 @@ export async function chooseEnglish(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByRole('button', { name: 'English' }).click();
   await expect(
-    page.getByRole('heading', { level: 1, name: 'What paper do you want to understand?' }),
+    page.getByRole('heading', { level: 1, name: 'Read the fine print. Understand every clause.' }),
   ).toBeVisible();
 }
 
 export async function openRentalExample(page: Page): Promise<void> {
   await page.getByRole('button', { name: /Try an example/ }).click();
-  await page.getByRole('button', { name: /Rent agreement/ }).click();
+  await page.getByRole('button', { name: /Hyderabad/ }).click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'Rent agreement (renting a flat)' }),
   ).toBeVisible();
+}
+
+/**
+ * Opens a workspace section the way a reader would at this screen size: from the
+ * sidebar on large screens, from the menu drawer on phones and tablets.
+ */
+export async function openSection(page: Page, name: RegExp): Promise<void> {
+  const sidebar = page.locator('.app__rail');
+  if (await sidebar.isVisible()) {
+    await sidebar.getByRole('button', { name }).click();
+  } else {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('dialog').getByRole('button', { name }).click();
+  }
 }
 
 /**

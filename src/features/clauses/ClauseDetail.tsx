@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import type { ExplanationLanguage } from '../../../shared/languages';
 import type { Party, VerifiedPoint } from '../../../shared/schema';
 import { Icon, type IconName } from '../../components/Icon';
@@ -30,7 +30,7 @@ const RULE_STYLE: Record<RuleType, { icon: IconName; you: MessageKey; party: Mes
   may: { icon: 'key', you: 'anatomyYouMay', party: 'anatomyPartyMay' },
 };
 
-function AnatomyRow({
+function Cell({
   icon,
   tone,
   label,
@@ -42,11 +42,9 @@ function AnatomyRow({
   children: ReactNode;
 }) {
   return (
-    <div className={`anatomy__row anatomy__row--${tone}`}>
+    <div className={`anatomy__cell anatomy__cell--${tone}`}>
       <dt>
-        <span className="anatomy__icon">
-          <Icon name={icon} />
-        </span>
+        <Icon name={icon} />
         {label}
       </dt>
       {children}
@@ -54,7 +52,7 @@ function AnatomyRow({
   );
 }
 
-export interface PointCardProps {
+export interface ClauseDetailProps {
   point: VerifiedPoint;
   number: number;
   parties: readonly Party[];
@@ -63,34 +61,42 @@ export interface PointCardProps {
   readingLevel: ReadingLevel;
   titlesById: ReadonlyMap<string, string>;
   checkOutcome: CheckOutcome | undefined;
+  note: string;
+  flagged: boolean;
   onCheck: (outcome: CheckOutcome) => void;
+  onNote: (note: string) => void;
+  onToggleFlag: () => void;
   onOpenPoint: (pointId: string) => void;
-  onShowInOriginal: (pointId: string) => void;
+  onShowInDocument: (pointId: string) => void;
+  onAsk: () => void;
 }
 
-/** One point of the paper, broken into its anatomy: who, must / must not / may, unless, if broken. */
-export function PointCard(props: PointCardProps) {
+/** One clause dissected: who must / must not / may, unless, if broken, time limit. */
+export function ClauseDetail(props: ClauseDetailProps) {
   const { t } = useI18n();
   const { point, parties, language, perspective } = props;
   const [openTerm, setOpenTerm] = useState<string | null>(null);
+  const noteId = useId();
   const explanation = props.readingLevel === 'simple' ? point.simple : point.detailed;
   const attention = needsAttention(point, perspective);
   const good = !attention && isGoodForReader(point, perspective);
+  const activeTerm = point.terms.find((term) => term.term === openTerm);
   const hasAnatomy =
     point.rules.length + point.conditions.length + point.consequences.length > 0 ||
     point.deadline !== '';
-  const activeTerm = point.terms.find((term) => term.term === openTerm);
-  const tone = attention ? 'attention' : good ? 'good' : point.importance;
 
   return (
-    <article className={`point point--${tone}`} aria-labelledby={`${point.id}-title`}>
-      <header className="point__header">
-        <span className="point__number" aria-hidden="true">
-          {props.number}
+    <article
+      className={`clause${attention ? ' clause--attention' : ''}${good ? ' clause--good' : ''}`}
+      aria-labelledby={`${point.id}-title`}
+    >
+      <header className="clause__head">
+        <span className="clause__number" aria-hidden="true">
+          {String(props.number).padStart(2, '0')}
         </span>
-        <div className="point__heading">
-          <div className="point__badges">
-            {point.sourceLabel && <Badge tone="neutral">{point.sourceLabel}</Badge>}
+        <div className="clause__heading">
+          <div className="clause__badges">
+            {point.sourceLabel && <Badge tone="ink">{point.sourceLabel}</Badge>}
             <Badge tone={point.importance === 'high' ? 'warning' : 'neutral'}>
               {t(IMPORTANCE_KEYS[point.importance])}
             </Badge>
@@ -104,14 +110,19 @@ export function PointCard(props: PointCardProps) {
                 {t('goodForYou')}
               </Badge>
             )}
+            {props.flagged && (
+              <Badge tone="info" icon="flag">
+                {t('flaggedForLawyer')}
+              </Badge>
+            )}
           </div>
-          <h2 id={`${point.id}-title`} className="point__title" lang={language}>
+          <h2 id={`${point.id}-title`} className="clause__title" lang={language}>
             {point.title}
           </h2>
         </div>
       </header>
 
-      <div className="point__explanation">
+      <div className="clause__explain">
         <p lang={language}>{explanation}</p>
         <SpeakButton
           id={`point-${point.id}`}
@@ -129,42 +140,62 @@ export function PointCard(props: PointCardProps) {
                 ? t(style.you)
                 : t(style.party, { party: partyLabel(parties, rule.partyId) });
             return (
-              <AnatomyRow
+              <Cell
                 key={`${rule.partyId}-${index}`}
                 icon={style.icon}
                 tone={rule.type}
                 label={label}
               >
                 <dd>{rule.action}</dd>
-              </AnatomyRow>
+              </Cell>
             );
           })}
           {point.conditions.length > 0 && (
-            <AnatomyRow icon="branch" tone="condition" label={t('anatomyUnless')}>
+            <Cell icon="branch" tone="condition" label={t('anatomyUnless')}>
               {point.conditions.map((condition) => (
                 <dd key={condition}>{condition}</dd>
               ))}
-            </AnatomyRow>
+            </Cell>
           )}
           {point.consequences.length > 0 && (
-            <AnatomyRow icon="alert" tone="consequence" label={t('anatomyIfBroken')}>
+            <Cell icon="alert" tone="consequence" label={t('anatomyIfBroken')}>
               {point.consequences.map((consequence) => (
                 <dd key={consequence}>{consequence}</dd>
               ))}
-            </AnatomyRow>
+            </Cell>
           )}
           {point.deadline && (
-            <AnatomyRow icon="clock" tone="deadline" label={t('anatomyDeadline')}>
+            <Cell icon="clock" tone="deadline" label={t('anatomyDeadline')}>
               <dd>{point.deadline}</dd>
-            </AnatomyRow>
+            </Cell>
           )}
         </dl>
       )}
 
+      <figure className={`source${point.verified ? '' : ' source--unverified'}`}>
+        <figcaption className="source__label">{t('quoteHeading')}</figcaption>
+        <blockquote lang={detectScriptLanguage(point.quote)}>{point.quote}</blockquote>
+        <div className="source__footer">
+          <span className={`stamp${point.verified ? '' : ' stamp--warn'}`}>
+            <Icon name={point.verified ? 'shieldCheck' : 'alert'} />
+            {t(point.verified ? 'quoteVerified' : 'quoteUnverified')}
+          </span>
+          {point.verified && (
+            <button
+              type="button"
+              className="btn btn--small"
+              onClick={() => props.onShowInDocument(point.id)}
+            >
+              <Icon name="document" /> {t('showInDocument')}
+            </button>
+          )}
+        </div>
+      </figure>
+
       {point.terms.length > 0 && (
         <div className="terms">
-          <h3 className="section-label">{t('termsHeading')}</h3>
-          <p className="terms__hint">{t('termsHint')}</p>
+          <h3 className="sub-label">{t('termsHeading')}</h3>
+          <p className="hint">{t('termsHint')}</p>
           <ul className="terms__chips">
             {point.terms.map((term) => {
               const open = term.term === openTerm;
@@ -172,20 +203,19 @@ export function PointCard(props: PointCardProps) {
                 <li key={term.term}>
                   <button
                     type="button"
-                    className={`term-chip term-chip--${term.source}`}
+                    className={`term term--${term.source}`}
                     aria-expanded={open}
                     aria-controls={`${point.id}-term`}
                     onClick={() => setOpenTerm(open ? null : term.term)}
                     lang={detectScriptLanguage(term.term)}
                   >
-                    <Icon name={term.source === 'document' ? 'document' : 'help'} />
                     {term.term}
                   </button>
                 </li>
               );
             })}
           </ul>
-          <div id={`${point.id}-term`} className="terms__panel" aria-live="polite">
+          <div id={`${point.id}-term`} aria-live="polite">
             {activeTerm && (
               <div className={`definition definition--${activeTerm.source}`}>
                 <p className="definition__term" lang={detectScriptLanguage(activeTerm.term)}>
@@ -204,31 +234,9 @@ export function PointCard(props: PointCardProps) {
         </div>
       )}
 
-      <figure className={`quote${point.verified ? '' : ' quote--unverified'}`}>
-        <figcaption className="section-label">{t('quoteHeading')}</figcaption>
-        <blockquote lang={detectScriptLanguage(point.quote)}>{point.quote}</blockquote>
-        <div className="quote__footer">
-          <Badge
-            tone={point.verified ? 'success' : 'warning'}
-            icon={point.verified ? 'shieldCheck' : 'alert'}
-          >
-            {t(point.verified ? 'quoteVerified' : 'quoteUnverified')}
-          </Badge>
-          {point.verified && (
-            <button
-              type="button"
-              className="button button--link"
-              onClick={() => props.onShowInOriginal(point.id)}
-            >
-              <Icon name="document" /> {t('showInOriginal')}
-            </button>
-          )}
-        </div>
-      </figure>
-
       {point.relatedPointIds.length > 0 && (
         <div className="related">
-          <h3 className="section-label">{t('relatedHeading')}</h3>
+          <h3 className="sub-label">{t('relatedHeading')}</h3>
           <ul className="related__list">
             {point.relatedPointIds.map((id) => (
               <li key={id}>
@@ -256,6 +264,36 @@ export function PointCard(props: PointCardProps) {
           onAnswer={props.onCheck}
         />
       )}
+
+      <div className="workbench">
+        <div className="workbench__note">
+          <label htmlFor={noteId} className="sub-label">
+            <Icon name="pencil" /> {t('notesLabel')}
+          </label>
+          <textarea
+            id={noteId}
+            rows={3}
+            value={props.note}
+            maxLength={1000}
+            placeholder={t('notesPlaceholder')}
+            onChange={(event) => props.onNote(event.target.value)}
+          />
+          <p className="hint">{t('notesHint')}</p>
+        </div>
+        <div className="workbench__actions">
+          <button
+            type="button"
+            className={`btn${props.flagged ? ' btn--flagged' : ''}`}
+            aria-pressed={props.flagged}
+            onClick={props.onToggleFlag}
+          >
+            <Icon name="flag" /> {t('flagForLawyer')}
+          </button>
+          <button type="button" className="btn" onClick={props.onAsk}>
+            <Icon name="chat" /> {t('askAboutClause')}
+          </button>
+        </div>
+      </div>
     </article>
   );
 }

@@ -13,29 +13,28 @@ const STEPS: readonly { step: WorkingStep; key: MessageKey; icon: IconName }[] =
 export function WorkingScreen({ step, onCancel }: { step: WorkingStep; onCancel: () => void }) {
   const { t } = useI18n();
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
-  const currentIndex = STEPS.findIndex((item) => item.step === step);
+  const currentIndex = Math.max(
+    0,
+    STEPS.findIndex((item) => item.step === step),
+  );
   const currentKey = STEPS[currentIndex]?.key ?? 'workingReading';
 
   return (
-    <div className="working screen" aria-busy="true">
-      <div className="scan" aria-hidden="true">
-        <div className="scan__paper">
-          <span className="scan__line scan__line--title" />
-          <span className="scan__line" />
-          <span className="scan__line scan__line--hl" />
-          <span className="scan__line" />
-          <span className="scan__line scan__line--short" />
-          <span className="scan__line scan__line--hl2" />
-          <span className="scan__line" />
-          <span className="scan__beam" />
-        </div>
-        <span className="scan__orb scan__orb--1" />
-        <span className="scan__orb scan__orb--2" />
+    <div className="working" aria-busy="true">
+      <div className="working__counter" aria-hidden="true">
+        <span className="working__current">0{currentIndex + 1}</span>
+        <span className="working__total">/03</span>
       </div>
-
       <h1 ref={headingRef} tabIndex={-1} aria-live="polite" className="working__title">
         {t(currentKey)}
       </h1>
+
+      <div className="scanner" aria-hidden="true">
+        {Array.from({ length: 7 }, (_, index) => (
+          <span key={index} className={`scanner__line scanner__line--${index % 3}`} />
+        ))}
+        <span className="scanner__beam" />
+      </div>
 
       <ol className="stepper">
         {STEPS.map((item, index) => {
@@ -50,15 +49,15 @@ export function WorkingScreen({ step, onCancel }: { step: WorkingStep; onCancel:
               <span className="stepper__icon">
                 <Icon name={state === 'done' ? 'check' : item.icon} />
               </span>
-              <span className="stepper__label">{t(item.key)}</span>
+              <span>{t(item.key)}</span>
             </li>
           );
         })}
       </ol>
 
-      <p className="muted">{t('workingHint')}</p>
-      <button type="button" className="button button--secondary" onClick={onCancel}>
-        {t('cancel')}
+      <p className="hint">{t('workingHint')}</p>
+      <button type="button" className="btn" onClick={onCancel}>
+        <Icon name="x" /> {t('cancel')}
       </button>
     </div>
   );

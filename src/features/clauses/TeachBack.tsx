@@ -25,7 +25,7 @@ const ANSWERS: readonly { answer: TeachBackAnswer; key: MessageKey; icon: IconNa
 /**
  * "Did you get it?" — the teach-back method from health literacy, applied to legal
  * papers. A real-life Yes/No question confirms understanding; a wrong or unsure answer
- * explains again in simpler words and adds the point to the lawyer questions.
+ * explains again in simpler words and adds the clause to the lawyer questions.
  */
 export function TeachBack({
   pointId,
@@ -49,9 +49,7 @@ export function TeachBack({
   return (
     <div className={`quiz${outcome ? ` quiz--${outcome}` : ''}`}>
       <h3 id={labelId} className="quiz__heading">
-        <span className="quiz__badge">
-          <Icon name="sparkle" />
-        </span>
+        <span className="quiz__tag">?</span>
         {t('checkHeading')}
       </h3>
       <p className="quiz__question" lang={language}>
@@ -62,7 +60,7 @@ export function TeachBack({
           <button
             key={answer}
             type="button"
-            className={`quiz__answer quiz__answer--${answer}`}
+            className="quiz__answer"
             aria-pressed={chosen === answer}
             onClick={() => {
               setChosen(answer);
@@ -88,8 +86,8 @@ export function TeachBack({
           </p>
           <p lang={language}>{simple}</p>
           <p lang={language}>{check.explanation}</p>
-          <p className="small">
-            <Icon name="help" /> {t('checkAddedToBrief')}
+          <p className="hint">
+            <Icon name="flag" /> {t('checkAddedToBrief')}
           </p>
         </div>
       )}

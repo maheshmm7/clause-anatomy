@@ -4,9 +4,10 @@ import type { MessageValues } from '../i18n/format';
 import type { MessageKey } from '../i18n/messages/en';
 
 /**
- * The app's main journey as an explicit state machine:
- *   input → (consent for photos) → working → result
- * Pure reducer: every transition is unit-tested without rendering.
+ * Reading a new paper as an explicit state machine:
+ *   idle → (consent for photos) → working → idle
+ * A finished analysis is handed to the workspace, so the flow is ready for the next
+ * paper straight away. Pure reducer: every transition is unit-tested.
  */
 
 export type WorkingStep = 'reading' | 'protecting' | 'explaining';
@@ -35,36 +36,29 @@ export interface LoadedDocument {
 }
 
 export type FlowState =
-  | { stage: 'input'; error: FlowError | null; pending: PendingUpload | null }
-  | { stage: 'working'; step: WorkingStep }
-  | { stage: 'result'; document: LoadedDocument };
+  | { stage: 'idle'; error: FlowError | null; pending: PendingUpload | null }
+  | { stage: 'working'; step: WorkingStep };
 
 export type FlowAction =
   | { type: 'needsConsent'; pending: PendingUpload }
   | { type: 'consentCancelled' }
   | { type: 'progress'; step: WorkingStep }
   | { type: 'failed'; error: FlowError }
-  | { type: 'cancelled' }
-  | { type: 'succeeded'; document: LoadedDocument }
-  | { type: 'reset' };
+  | { type: 'finished' };
 
-export const initialFlowState: FlowState = { stage: 'input', error: null, pending: null };
+export const initialFlowState: FlowState = { stage: 'idle', error: null, pending: null };
 
 export function flowReducer(state: FlowState, action: FlowAction): FlowState {
   switch (action.type) {
     case 'needsConsent':
-      return { stage: 'input', error: null, pending: action.pending };
+      return { stage: 'idle', error: null, pending: action.pending };
     case 'consentCancelled':
-      return state.stage === 'input' ? { ...state, pending: null } : state;
+      return state.stage === 'idle' ? { ...state, pending: null } : state;
     case 'progress':
       return { stage: 'working', step: action.step };
     case 'failed':
-      return { stage: 'input', error: action.error, pending: null };
-    case 'cancelled':
-      return initialFlowState;
-    case 'succeeded':
-      return { stage: 'result', document: action.document };
-    case 'reset':
+      return { stage: 'idle', error: action.error, pending: null };
+    case 'finished':
       return initialFlowState;
   }
 }

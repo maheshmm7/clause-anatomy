@@ -3,9 +3,9 @@ import type { MessageValues } from '../i18n/format';
 import type { MessageKey } from '../i18n/messages/en';
 
 /**
- * The lawyer-ready brief: turns what the reader did in the app (points they were
- * unsure about, questions the paper could not answer) into questions they can take
- * to a lawyer or legal aid clinic.
+ * The lawyer-ready brief: turns what the reader did in the workspace (clauses they
+ * flagged or wrote notes on, checks they were unsure about, questions the paper could
+ * not answer) into questions they can take to a lawyer or legal aid clinic.
  */
 
 type Translate = (key: MessageKey, values?: MessageValues) => string;
@@ -21,23 +21,37 @@ export interface BriefInput {
   analysis: AnalysisResult;
   checks: Readonly<Record<string, CheckOutcome>>;
   asked: readonly AskedQuestion[];
+  notes?: Readonly<Record<string, string>>;
+  flags?: Readonly<Record<string, boolean>>;
 }
 
-/** Questions for a lawyer, in order: AI-suggested, not understood, not answered by the paper. */
+/**
+ * Questions for a lawyer, in order: the reader's flagged clauses (with their notes),
+ * clauses not understood, questions the paper could not answer, then AI suggestions.
+ */
 export function collectLawyerQuestions(
-  { analysis, checks, asked }: BriefInput,
+  { analysis, checks, asked, notes = {}, flags = {} }: BriefInput,
   t: Translate,
 ): string[] {
+  const flagged = analysis.points
+    .filter((point) => flags[point.id])
+    .map((point) => {
+      const note = notes[point.id]?.trim();
+      return note
+        ? t('briefFlaggedPoint', { title: point.title, note })
+        : t('briefFlaggedNoNote', { title: point.title });
+    });
   const unsure = analysis.points
+    .filter((point) => !flags[point.id])
     .filter((point) => checks[point.id] === 'wrong' || checks[point.id] === 'unsure')
     .map((point) => t('briefUnsurePoint', { title: point.title }));
   const unanswered = asked
     .filter((entry) => entry.basis !== 'document')
     .map((entry) => entry.question);
-  return [...new Set([...analysis.lawyerQuestions, ...unsure, ...unanswered])];
+  return [...new Set([...flagged, ...unsure, ...unanswered, ...analysis.lawyerQuestions])];
 }
 
-/** Plain-text brief for copying, sharing (e.g. WhatsApp) or printing. */
+/** Plain-text brief for copying, sharing (e.g. WhatsApp), downloading or printing. */
 export function buildBriefText(
   input: BriefInput,
   t: Translate,

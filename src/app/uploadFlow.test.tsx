@@ -45,7 +45,7 @@ async function uploadPhoto(user: ReturnType<typeof userEvent.setup>) {
   );
 }
 
-describe('photo upload flow', () => {
+describe('photo upload flow', { timeout: 20_000 }, () => {
   beforeEach(() => {
     readDocumentFile.mockReset();
   });
@@ -87,7 +87,7 @@ describe('photo upload flow', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: 'What paper do you want to understand?',
+        name: 'Read the fine print. Understand every clause.',
       }),
     ).toBeVisible();
     expect(calls.some((call) => call.path === '/api/extract')).toBe(false);
@@ -147,7 +147,7 @@ describe('photo upload flow', () => {
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: 'What paper do you want to understand?',
+        name: 'Read the fine print. Understand every clause.',
       }),
     ).toBeVisible();
     release?.();

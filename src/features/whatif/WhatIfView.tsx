@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import type { AnalysisResult, ScenarioOutcome } from '../../../shared/schema';
+import type { ScenarioOutcome } from '../../../shared/schema';
 import { walkScenario, type ScenarioAnswer } from '../../../shared/scenario';
+import { useActiveDoc } from '../../app/WorkspaceContext';
 import { Icon, type IconName } from '../../components/Icon';
-import { SpeakButton } from '../../components/ui';
-import { useFocusOnChange } from '../../hooks/dom';
+import { SpeakButton, ViewHeader } from '../../components/ui';
+import { useFocusOnChange, useFocusOnMount } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/messages/en';
 
@@ -14,26 +15,36 @@ const OUTCOME_STYLE: Record<ScenarioOutcome['tone'], { key: MessageKey; icon: Ic
 };
 
 /**
- * "What if…?" simulator. The decision tree comes from the analysis, but walking it is
- * plain deterministic code (shared/scenario.ts): same answers, same outcome, every time.
+ * 05 — "What if…?" simulator. The decision tree comes from the analysis, but walking
+ * it is plain deterministic code (shared/scenario.ts): same answers, same outcome.
  */
-export function WhatIfView({
-  analysis,
-  onOpenPoint,
-}: {
-  analysis: AnalysisResult;
-  onOpenPoint: (pointId: string) => void;
-}) {
+export function WhatIfView() {
   const { t } = useI18n();
+  const { doc, go } = useActiveDoc();
+  const headingRef = useFocusOnMount<HTMLHeadingElement>();
+  const { analysis } = doc.loaded;
   const [scenarioId, setScenarioId] = useState<string | null>(analysis.scenarios[0]?.id ?? null);
   const [answers, setAnswers] = useState<ScenarioAnswer[]>([]);
   const stepRef = useFocusOnChange<HTMLHeadingElement>(`${scenarioId}-${answers.length}`);
   const language = analysis.language;
   const titles = new Map(analysis.points.map((point) => [point.id, point.title]));
-
   const scenario =
     analysis.scenarios.find((candidate) => candidate.id === scenarioId) ?? analysis.scenarios[0];
-  if (!scenario) return <p className="empty-state">{t('whatIfNone')}</p>;
+
+  const header = (
+    <ViewHeader number="05" kicker={t('navWhatIf')} title={t('navWhatIf')} headingRef={headingRef}>
+      <p className="view-header__lead">{t('whatIfIntro')}</p>
+    </ViewHeader>
+  );
+
+  if (!scenario) {
+    return (
+      <div className="view">
+        {header}
+        <p className="empty">{t('whatIfNone')}</p>
+      </div>
+    );
+  }
 
   const step = walkScenario(scenario, answers);
   const trail = answers.map((answer, depth) => {
@@ -41,129 +52,131 @@ export function WhatIfView({
     return { question: node.kind === 'question' ? node.node.question : '', answer };
   });
 
-  const choose = (id: string): void => {
-    setScenarioId(id);
-    setAnswers([]);
-  };
-
   return (
-    <div className="whatif">
-      <p className="lead">{t('whatIfIntro')}</p>
-
-      <fieldset className="choice-group">
-        <legend>{t('whatIfPick')}</legend>
-        <div className="scenario-cards">
-          {analysis.scenarios.map((candidate) => (
-            <label key={candidate.id} className="scenario-card">
+    <div className="view">
+      {header}
+      <div className="whatif">
+        <fieldset className="scenarios">
+          <legend className="sub-label">{t('whatIfPick')}</legend>
+          {analysis.scenarios.map((candidate, index) => (
+            <label key={candidate.id} className="scenario">
               <input
                 type="radio"
                 name="whatif-scenario"
                 checked={candidate.id === scenario.id}
-                onChange={() => choose(candidate.id)}
+                onChange={() => {
+                  setScenarioId(candidate.id);
+                  setAnswers([]);
+                }}
               />
-              <Icon name="branch" />
-              <span lang={language}>{candidate.title}</span>
+              <span className="scenario__index" aria-hidden="true">
+                S{index + 1}
+              </span>
+              <span className="scenario__title" lang={language}>
+                {candidate.title}
+              </span>
             </label>
           ))}
-        </div>
-      </fieldset>
+        </fieldset>
 
-      <section className="flow card" aria-live="polite">
-        {trail.length > 0 && (
-          <div>
-            <h2 className="section-label">{t('yourAnswers')}</h2>
-            <ol className="flow__trail">
-              {trail.map((item, depth) => (
-                <li key={depth} className="flow__node flow__node--done">
-                  <span lang={language}>{item.question}</span>
-                  <span className={`answer-pill answer-pill--${item.answer}`}>
-                    {item.answer === 'yes' ? t('answerYes') : t('answerNo')}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <section className="flow" aria-live="polite">
+          {trail.length > 0 && (
+            <div className="flow__trail">
+              <h2 className="sub-label">{t('yourAnswers')}</h2>
+              <ol>
+                {trail.map((item, depth) => (
+                  <li key={depth} className="flow__node">
+                    <span className="flow__depth" aria-hidden="true">
+                      Q{depth + 1}
+                    </span>
+                    <span lang={language}>{item.question}</span>
+                    <span className={`answer-tag answer-tag--${item.answer}`}>
+                      {item.answer === 'yes' ? t('answerYes') : t('answerNo')}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
 
-        {step.kind === 'question' ? (
-          <div className="flow__current">
-            <p className="section-label">{t('questionNumber', { n: step.depth + 1 })}</p>
-            <h2 ref={stepRef} tabIndex={-1} className="flow__question" lang={language}>
-              {step.node.question}
-            </h2>
-            <div className="flow__answers">
+          {step.kind === 'question' ? (
+            <div className="flow__question">
+              <p className="sub-label">{t('questionNumber', { n: step.depth + 1 })}</p>
+              <h2 ref={stepRef} tabIndex={-1} className="flow__title" lang={language}>
+                {step.node.question}
+              </h2>
+              <div className="flow__answers">
+                <button
+                  type="button"
+                  className="decision decision--yes"
+                  onClick={() => setAnswers([...answers, 'yes'])}
+                >
+                  <Icon name="check" /> {t('answerYes')}
+                </button>
+                <button
+                  type="button"
+                  className="decision decision--no"
+                  onClick={() => setAnswers([...answers, 'no'])}
+                >
+                  <Icon name="ban" /> {t('answerNo')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={`verdict verdict--${step.outcome.tone}`}>
+              <h2 ref={stepRef} tabIndex={-1} className="sub-label">
+                {t('outcomeHeading')}
+              </h2>
+              <p className="verdict__tone">
+                <Icon name={OUTCOME_STYLE[step.outcome.tone].icon} />
+                {t(OUTCOME_STYLE[step.outcome.tone].key)}
+              </p>
+              <p className="verdict__text" lang={language}>
+                {step.outcome.text}
+              </p>
+              <SpeakButton
+                id={`outcome-${scenario.id}`}
+                text={step.outcome.text}
+                language={language}
+              />
+              {step.outcome.pointIds.length > 0 && (
+                <div className="related">
+                  <p className="sub-label">{t('basedOn')}</p>
+                  <ul className="related__list">
+                    {step.outcome.pointIds.map((id) => (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          className="related__link"
+                          onClick={() => go('clauses', { pointId: id })}
+                          lang={language}
+                        >
+                          {titles.get(id) ?? id} <Icon name="arrowRight" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {answers.length > 0 && (
+            <div className="button-row">
               <button
                 type="button"
-                className="big-answer big-answer--yes"
-                onClick={() => setAnswers([...answers, 'yes'])}
+                className="btn"
+                onClick={() => setAnswers(answers.slice(0, -1))}
               >
-                <Icon name="check" /> {t('answerYes')}
+                <Icon name="arrowLeft" /> {t('back')}
               </button>
-              <button
-                type="button"
-                className="big-answer big-answer--no"
-                onClick={() => setAnswers([...answers, 'no'])}
-              >
-                <Icon name="ban" /> {t('answerNo')}
+              <button type="button" className="btn" onClick={() => setAnswers([])}>
+                <Icon name="refresh" /> {t('startAgain')}
               </button>
             </div>
-          </div>
-        ) : (
-          <div className={`outcome outcome--${step.outcome.tone}`}>
-            <h2 ref={stepRef} tabIndex={-1} className="section-label">
-              {t('outcomeHeading')}
-            </h2>
-            <p className="outcome__tone">
-              <span className="outcome__icon">
-                <Icon name={OUTCOME_STYLE[step.outcome.tone].icon} />
-              </span>
-              {t(OUTCOME_STYLE[step.outcome.tone].key)}
-            </p>
-            <p className="outcome__text" lang={language}>
-              {step.outcome.text}
-            </p>
-            <SpeakButton
-              id={`outcome-${scenario.id}`}
-              text={step.outcome.text}
-              language={language}
-            />
-            {step.outcome.pointIds.length > 0 && (
-              <div className="related">
-                <p className="section-label">{t('basedOn')}</p>
-                <ul className="related__list">
-                  {step.outcome.pointIds.map((id) => (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        className="related__link"
-                        onClick={() => onOpenPoint(id)}
-                        lang={language}
-                      >
-                        {titles.get(id) ?? id} <Icon name="arrowRight" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {answers.length > 0 && (
-          <div className="button-row">
-            <button
-              type="button"
-              className="button button--secondary"
-              onClick={() => setAnswers(answers.slice(0, -1))}
-            >
-              <Icon name="arrowLeft" /> {t('back')}
-            </button>
-            <button type="button" className="button button--ghost" onClick={() => setAnswers([])}>
-              <Icon name="refresh" /> {t('startAgain')}
-            </button>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

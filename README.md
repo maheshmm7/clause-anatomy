@@ -31,13 +31,32 @@ And around the core:
 - **Notices & urgent papers**: legal notices get a _Who sent it / What they claim / What they want / By when / If ignored_ summary. A deterministic safety net raises urgency for warrants, summons or eviction (English, Hindi, Telugu) and shows **free legal aid (15100)** with tap-to-call.
 - **Honest scope**: papers that are not legal documents are recognised and explained as such; court papers are explained but pointed to a lawyer.
 
+### The legal intelligence workspace
+
+The interface is a **neo-brutalist, document-first dashboard** (hard borders, flat accent colours, Swiss-editorial numbered sections, a serif "paper" for the document itself), not a one-page result. A sidebar (a menu drawer and a bottom bar on phones) leads to numbered sections:
+
+| #   | Section         | What it does                                                                                                                                                   |
+| --- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 00  | **Workspace**   | Add a paper (photo, file with drag-and-drop, paste, examples), reopen papers from this session, choose the explanation language.                               |
+| 01  | **Overview**    | KPI strip (clauses, need attention, quotes verified, understood, next date countdown), role picker, who-the-paper-favours bar, top risks, timeline, parties.   |
+| 02  | **Clauses**     | Searchable, filterable clause index (attention / flagged / not understood), clause anatomy, teach-back, **personal notes**, **flag for a lawyer**, J/K keys.   |
+| 03  | **Document**    | The redacted paper with every explained sentence highlighted and numbered, and **margin notes** linked both ways with the clauses.                             |
+| 04  | **Risk radar**  | Every clause placed on an importance × "which side it favours" matrix, plus _what can go wrong_ collected from all clauses.                                    |
+| 05  | **What if?**    | The deterministic Yes/No simulator with the reader's answer trail.                                                                                             |
+| 06  | **Ask**         | A conversation about the paper (typed or spoken), with verified quotes; any clause can start a question.                                                       |
+| 07  | **Glossary**    | Every legal word in the paper, searchable, with its source badge and links to the clauses that use it.                                                         |
+| 08  | **Action plan** | Duties checklist, dates (.ics), free legal aid and the lawyer brief — now including flagged clauses and the reader's own notes (copy, share, download, print). |
+| 09  | **Compare**     | Two papers side by side: key facts (money, dates, verified quotes), similar clauses matched locally, and clauses found in only one paper.                      |
+
+A **command palette** (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd> or <kbd>/</kbd>) jumps to any section, clause or legal word. Display settings — interface language, **light / dark / auto theme** and **text size** (up to 125 %) — are always one tap away. Browser Back/Forward move between sections and back to the language page.
+
 ## 3. Designed for every reader
 
 - **Language first**: the first screen shows languages in their own scripts. The **whole interface** is available in **English, हिन्दी and తెలుగు**; explanations are available in **10 Indian languages** (English, Hindi, Telugu, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi).
-- **Low-literacy friendly**: one point at a time on phones, short sentences, a _Simple / Detailed_ switch, icons **and** words (never colour alone), tap-to-answer checks, and **read-aloud** on every explanation (browser speech, no audio sent to our server).
+- **Low-literacy friendly**: one clause at a time, short sentences, a _Simple / Detailed_ switch, icons **and** words (never colour alone), tap-to-answer checks, and **read-aloud** on every explanation (browser speech, no audio sent to our server).
 - **Photo first**: most people have a paper, not a PDF. Take a photo, upload a PDF/photo/text file, paste text, or try a built-in example.
-- **Responsive and adaptive**: mobile-first layout tested at phone (Pixel 7), tablet (820×1180) and desktop (1440×900); safe-area insets, 48 px touch targets, light/dark themes, reduced-motion and forced-colours support, print styles for the brief.
-- **Accessible**: semantic landmarks, skip link, WAI-ARIA tabs with arrow-key navigation, focus management between screens, `lang` attributes on every piece of mixed-language content, live regions for progress. Verified with **axe-core** in unit tests and in real Chrome (WCAG 2.2 AA, including contrast, light and dark).
+- **Responsive and adaptive**: mobile-first layout tested at phone (Pixel 7), tablet (820×1180) and desktop (1440×900); safe-area insets, 48 px touch targets, light/dark/auto themes and adjustable text size, reduced-motion support, print styles for the brief.
+- **Accessible**: semantic landmarks, skip link, native radio groups for every choice, a WAI-ARIA combobox command palette and focus-trapped dialogs, focusable scroll regions, focus management between sections, `lang` attributes on every piece of mixed-language content, live regions for progress. Verified with **axe-core** in unit tests and in real Chrome (WCAG 2.2 AA, including contrast, light and dark).
 
 ## 4. How it works
 
@@ -51,7 +70,7 @@ flowchart LR
     E --> F[API: /api/analyze]
     D --> G[API: /api/extract]
     G --> E
-    F --> H[Clause anatomy · teach-back · what-if · brief]
+    F --> H[Workspace: overview · clauses · document · risks · what-if · ask · glossary · plan · compare]
   end
   subgraph Server [Node + Express]
     F --> S1[Validate with Zod · rate limit · redact again]
@@ -67,7 +86,7 @@ flowchart LR
 2. **Protect** — personal identifiers are redacted in the browser **and again on the server** (defence in depth). Nothing is stored; responses are `Cache-Control: no-store`.
 3. **Explain** — Gemini returns JSON constrained by a schema generated from the same Zod schema the server validates against (one source of truth). The document is fenced with a random per-request boundary and the prompt treats it as untrusted data (prompt-injection defence).
 4. **Verify** — the server checks every quote against the document (normalised exact match → ordered ellipsis segments → ≥ 90 % word-window match), removes teach-back questions from unverified points, downgrades ungrounded term sources, renumbers ids, drops impossible dates and rejects invalid what-if trees.
-5. **Personalise** — perspective, reading level, checklists, calendar files and the lawyer brief are all computed in the browser from the verified result.
+5. **Personalise** — perspective, reading level, risk radar, glossary, comparisons, checklists, calendar files and the lawyer brief are all computed in the browser from the verified result, with no extra AI calls.
 
 ### Architecture
 
@@ -84,8 +103,10 @@ server/          Express 5 API (dependency-injected, runs locally, on Node or se
   middleware/      Helmet CSP, rate limiting, body validation, error handling
 api/index.ts     Serverless entry (e.g. Vercel)
 src/             React 19 UI
-  app/             State machine (reducer) and orchestration hook
-  features/        welcome · input · working · result · points · whatif · ask · next · original
+  app/             Workspace reducer (library, sections, notes, flags), reading-flow state machine, history
+  features/        shell (sidebar, top bar, bottom bar, command palette) · welcome · home · working ·
+                   overview · clauses · document · risks · whatif · ask · glossary · plan · compare
+  lib/             Pure helpers: perspective, insights (risk matrix, glossary, annotations), compare, brief, .ics
   i18n/            Typed dictionaries (missing translation = build error)
   samples/         Pre-computed, schema-validated examples (work without an API key)
 e2e/             Playwright tests in real Chrome at phone, tablet and desktop sizes
@@ -93,14 +114,14 @@ e2e/             Playwright tests in real Chrome at phone, tablet and desktop si
 
 ## 5. Evaluation focus areas
 
-| Area                            | What we did                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Code quality**                | Strict TypeScript (`noUncheckedIndexedAccess`), ESLint (typescript-eslint strict, react-hooks, jsx-a11y strict), Prettier, pure functions for all logic, dependency injection for the AI client, reducers for UI state, one schema source of truth, typed i18n.                                                                                                                                                                          |
-| **Security**                    | API key only on the server; strict CSP and Helmet headers; `no-store` caching; per-IP rate limiting; strict Zod validation (unknown fields rejected, size limits per route); magic-byte file validation; PII redaction on client and server; prompt-injection fencing; model output validated and clipped; errors never leak internals; logs never contain documents; secret scan and `npm audit` in CI. See [SECURITY.md](SECURITY.md). |
-| **Efficiency**                  | Code-split UI (result views, examples, pdf.js and schema validation load on demand); entry bundle budget enforced in CI; on-device text extraction and image compression; in-memory cache of analyses (SHA-256 key) so the same paper never costs a second AI call; perspective, checklists, briefs and what-if walks computed locally; low thinking level and single structured call per analysis; gzip; immutable asset caching.       |
-| **Testing**                     | 170+ Vitest unit/integration tests (shared logic, server with a fake AI, UI journeys with axe) with coverage thresholds; Playwright end-to-end tests in real Chrome on mobile, tablet and desktop (journeys, keyboard-only, dark mode, Telugu, real PDF upload, photo consent, production security headers); examples validated by the same checks as live AI output.                                                                    |
-| **Accessibility**               | See section 3 — WCAG 2.2 AA verified with axe in jsdom and in Chrome (light and dark).                                                                                                                                                                                                                                                                                                                                                   |
-| **Problem statement alignment** | Understand (anatomy, terms, teach-back, reading level, languages), compare (perspective lens, duties of each side), navigate (linked clauses, what-if, show in original), next steps (checklist, dates, lawyer brief, legal aid) — with visible grounding and a clear "not a lawyer" boundary.                                                                                                                                           |
+| Area                            | What we did                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Code quality**                | Strict TypeScript (`noUncheckedIndexedAccess`), ESLint (typescript-eslint strict, react-hooks, jsx-a11y strict), Prettier, pure functions for all logic, dependency injection for the AI client, reducers for UI state, one schema source of truth, typed i18n.                                                                                                                                                                              |
+| **Security**                    | API key only on the server; strict CSP and Helmet headers; `no-store` caching; per-IP rate limiting; strict Zod validation (unknown fields rejected, size limits per route); magic-byte file validation; PII redaction on client and server; prompt-injection fencing; model output validated and clipped; errors never leak internals; logs never contain documents; secret scan and `npm audit` in CI. See [SECURITY.md](SECURITY.md).     |
+| **Efficiency**                  | Code-split UI (each workspace section, examples, pdf.js and schema validation load on demand); entry bundle budget enforced in CI; on-device text extraction and image compression; in-memory cache of analyses (SHA-256 key) so the same paper never costs a second AI call; perspective, checklists, briefs and what-if walks computed locally; low thinking level and single structured call per analysis; gzip; immutable asset caching. |
+| **Testing**                     | 190+ Vitest unit/integration tests (shared logic, workspace reducer, insights and compare, server with a fake AI, UI journeys through every section with axe) with coverage thresholds; Playwright end-to-end tests in real Chrome on mobile, tablet and desktop (journeys, keyboard-only, dark mode, Telugu, real PDF upload, photo consent, production security headers); examples validated by the same checks as live AI output.         |
+| **Accessibility**               | See section 3 — WCAG 2.2 AA verified with axe in jsdom and in Chrome (light and dark).                                                                                                                                                                                                                                                                                                                                                       |
+| **Problem statement alignment** | Understand (anatomy, glossary, teach-back, reading level, languages), compare (two papers side by side, risk radar, perspective lens), navigate (dashboard sections, command palette, annotated document, linked clauses, what-if), next steps (checklist, dates, lawyer brief, legal aid) — with visible grounding and a clear "not a lawyer" boundary.                                                                                     |
 
 ## 6. Run it locally
 
@@ -156,6 +177,8 @@ The app is a static front-end plus one API. On **Vercel**, `vercel.json` builds 
 - Quote verification proves a quote **exists** in the paper, not that the explanation of it is correct.
 - "General information" about Acts and sections comes from the model's general knowledge and is labelled accordingly.
 - Read-aloud and voice questions depend on the voices and speech recognition available in the reader's browser.
+- The session library (up to 6 papers), notes and flags live only in the open browser tab and are lost on reload — by design, nothing is stored.
+- Clause matching in _Compare_ works best for papers of the same kind explained in the same language.
 - Rate limiting is in-memory per server instance; a multi-instance deployment should use a shared store.
 - Interface translations (Hindi, Telugu) were written for this project and should be reviewed by native speakers before wide release.
 

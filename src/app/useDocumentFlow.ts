@@ -38,21 +38,32 @@ function toFlowError(error: unknown): FlowError | null {
 export interface DocumentFlowOptions {
   explanationLanguage: ExplanationLanguage;
   aiAvailable: boolean;
+  /** Receives every finished analysis (the workspace adds it to the library). */
+  onLoaded: (document: LoadedDocument) => void;
 }
 
 /**
  * Orchestrates reading → redacting → analysing, with cancellation and an in-memory
  * cache (same text + language never costs a second AI call during a visit).
  */
-export function useDocumentFlow({ explanationLanguage, aiAvailable }: DocumentFlowOptions) {
+export function useDocumentFlow({
+  explanationLanguage,
+  aiAvailable,
+  onLoaded,
+}: DocumentFlowOptions) {
   const [state, dispatch] = useReducer(flowReducer, initialFlowState);
   const controllerRef = useRef<AbortController | null>(null);
   const cacheRef = useRef(new Map<string, AnalysisResult>());
+  const onLoadedRef = useRef(onLoaded);
+
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+  }, [onLoaded]);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 
   // Photo previews are object URLs: release them when no longer shown.
-  const pendingPreview = state.stage === 'input' ? state.pending?.previewUrl : null;
+  const pendingPreview = state.stage === 'idle' ? state.pending?.previewUrl : null;
   useEffect(
     () => () => {
       if (pendingPreview) URL.revokeObjectURL(pendingPreview);
@@ -66,11 +77,13 @@ export function useDocumentFlow({ explanationLanguage, aiAvailable }: DocumentFl
     controllerRef.current = controller;
     try {
       const document = await task(controller.signal);
-      if (!controller.signal.aborted) dispatch({ type: 'succeeded', document });
+      if (controller.signal.aborted) return;
+      dispatch({ type: 'finished' });
+      onLoadedRef.current(document);
     } catch (error) {
       if (controller.signal.aborted) return;
       const flowError = toFlowError(error);
-      dispatch(flowError ? { type: 'failed', error: flowError } : { type: 'cancelled' });
+      dispatch(flowError ? { type: 'failed', error: flowError } : { type: 'finished' });
     }
   }, []);
 
@@ -120,7 +133,7 @@ export function useDocumentFlow({ explanationLanguage, aiAvailable }: DocumentFl
         await run((signal) => analyze(result.text, signal));
       } catch (error) {
         const flowError = toFlowError(error);
-        dispatch(flowError ? { type: 'failed', error: flowError } : { type: 'cancelled' });
+        dispatch(flowError ? { type: 'failed', error: flowError } : { type: 'finished' });
       }
     },
     [analyze, run],
@@ -168,23 +181,10 @@ export function useDocumentFlow({ explanationLanguage, aiAvailable }: DocumentFl
 
   const cancel = useCallback(() => {
     controllerRef.current?.abort();
-    dispatch({ type: 'cancelled' });
+    dispatch({ type: 'finished' });
   }, []);
 
   const cancelConsent = useCallback(() => dispatch({ type: 'consentCancelled' }), []);
-  const reset = useCallback(() => {
-    controllerRef.current?.abort();
-    dispatch({ type: 'reset' });
-  }, []);
 
-  return {
-    state,
-    submitText,
-    submitFile,
-    confirmConsent,
-    cancelConsent,
-    loadSample,
-    cancel,
-    reset,
-  };
+  return { state, submitText, submitFile, confirmConsent, cancelConsent, loadSample, cancel };
 }

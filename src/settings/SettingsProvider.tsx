@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   isExplanationLanguage,
   isUiLanguage,
@@ -8,27 +8,41 @@ import {
 import { readPreference, writePreference } from '../lib/storage';
 
 export type ReadingLevel = 'simple' | 'detailed';
+export type ThemePreference = 'system' | 'light' | 'dark';
+export type TextSize = 'normal' | 'large' | 'xlarge';
+
+export const THEMES: readonly ThemePreference[] = ['system', 'light', 'dark'];
+export const TEXT_SIZES: readonly TextSize[] = ['normal', 'large', 'xlarge'];
 
 export interface Settings {
   /** `null` until the user picks a language on their first visit. */
   uiLanguage: UiLanguage | null;
   explanationLanguage: ExplanationLanguage;
   readingLevel: ReadingLevel;
+  theme: ThemePreference;
+  textSize: TextSize;
   setUiLanguage: (language: UiLanguage) => void;
   setExplanationLanguage: (language: ExplanationLanguage) => void;
   setReadingLevel: (level: ReadingLevel) => void;
+  setTheme: (theme: ThemePreference) => void;
+  setTextSize: (size: TextSize) => void;
 }
 
 const SettingsContext = createContext<Settings | null>(null);
 
+function stored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  const value = readPreference(key);
+  return (allowed as readonly string[]).includes(value ?? '') ? (value as T) : fallback;
+}
+
 function storedUiLanguage(): UiLanguage | null {
-  const stored = readPreference('uiLanguage');
-  return isUiLanguage(stored) ? stored : null;
+  const value = readPreference('uiLanguage');
+  return isUiLanguage(value) ? value : null;
 }
 
 function storedExplanationLanguage(fallback: UiLanguage | null): ExplanationLanguage {
-  const stored = readPreference('explanationLanguage');
-  return isExplanationLanguage(stored) ? stored : (fallback ?? 'en');
+  const value = readPreference('explanationLanguage');
+  return isExplanationLanguage(value) ? value : (fallback ?? 'en');
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -37,14 +51,28 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     storedExplanationLanguage(storedUiLanguage()),
   );
   const [readingLevel, setLevel] = useState<ReadingLevel>(() =>
-    readPreference('readingLevel') === 'detailed' ? 'detailed' : 'simple',
+    stored('readingLevel', ['simple', 'detailed'], 'simple'),
   );
+  const [theme, setThemeState] = useState<ThemePreference>(() => stored('theme', THEMES, 'system'));
+  const [textSize, setTextSizeState] = useState<TextSize>(() =>
+    stored('textSize', TEXT_SIZES, 'normal'),
+  );
+
+  // Theme and text size are applied on <html> so every screen, including the landing page, follows them.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'system') delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    root.dataset.textSize = textSize;
+  }, [theme, textSize]);
 
   const value = useMemo<Settings>(
     () => ({
       uiLanguage,
       explanationLanguage,
       readingLevel,
+      theme,
+      textSize,
       setUiLanguage: (language) => {
         setUi(language);
         writePreference('uiLanguage', language);
@@ -60,8 +88,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setLevel(level);
         writePreference('readingLevel', level);
       },
+      setTheme: (next) => {
+        setThemeState(next);
+        writePreference('theme', next);
+      },
+      setTextSize: (size) => {
+        setTextSizeState(size);
+        writePreference('textSize', size);
+      },
     }),
-    [uiLanguage, explanationLanguage, readingLevel],
+    [uiLanguage, explanationLanguage, readingLevel, theme, textSize],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

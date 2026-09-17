@@ -2,7 +2,7 @@ import type { ExplanationLanguage } from '../../shared/languages';
 import type { AnalysisResult } from '../../shared/schema';
 import type { MessageKey } from '../i18n/messages/en';
 
-export type SampleId = 'rental' | 'notice';
+export type SampleId = 'rental' | 'rental-b' | 'notice';
 
 export interface SampleData {
   text: string;
@@ -23,6 +23,12 @@ export const SAMPLES: readonly SampleDefinition[] = [
     titleKey: 'sampleRental',
     hintKey: 'sampleRentalHint',
     load: async () => (await import('./rental')).RENTAL_SAMPLE,
+  },
+  {
+    id: 'rental-b',
+    titleKey: 'sampleRentalB',
+    hintKey: 'sampleRentalBHint',
+    load: async () => (await import('./rental-b')).RENTAL_B_SAMPLE,
   },
   {
     id: 'notice',

@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { EXPLANATION_LANGUAGES } from './languages.js';
 import { LIMITS, UPLOAD_MIME_TYPES } from './limits.js';
 
+// No runtime code generation: Zod's JIT probes `new Function`, which the app's strict
+// Content-Security-Policy (script-src 'self', no 'unsafe-eval') rightly blocks.
+z.config({ jitless: true });
+
 /* -------------------------------------------------------------------------- */
 /*  AI output schemas                                                          */
 /*  These double as the JSON Schema that constrains Gemini's structured output */

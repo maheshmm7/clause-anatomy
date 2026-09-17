@@ -95,6 +95,20 @@ describe('lawyer brief', () => {
     expect(new Set(questions).size).toBe(questions.length);
   });
 
+  it('puts clauses flagged for a lawyer first, with the reader’s own notes', () => {
+    const questions = collectLawyerQuestions(
+      { ...input, flags: { p5: true, p2: true, p3: false }, notes: { p5: 'Can I give 1 month?' } },
+      t,
+    );
+    expect(questions.slice(0, 2)).toEqual([
+      'Please explain "The first 6 months are locked" and what it means for me.',
+      'About "Ending the agreement with notice": Can I give 1 month?',
+    ]);
+    expect(questions.filter((question) => question.includes('Ending the agreement'))).toHaveLength(
+      1,
+    );
+  });
+
   it('builds a shareable plain-text brief', () => {
     const text = buildBriefText(input, t, (date) => formatIsoDate('en', date));
     expect(text.startsWith('My legal paper: Rent agreement (renting a flat)')).toBe(true);
@@ -137,8 +151,8 @@ describe('i18n', () => {
   });
 
   it('fills placeholders and leaves unknown ones visible', () => {
-    expect(formatMessage('en', 'pointOf', { current: 2, total: 9 })).toBe('Point 2 of 9');
-    expect(formatMessage('en', 'pointOf', { current: 2 })).toBe('Point 2 of {total}');
+    expect(formatMessage('en', 'pointOf', { current: 2, total: 9 })).toBe('Clause 2 of 9');
+    expect(formatMessage('en', 'pointOf', { current: 2 })).toBe('Clause 2 of {total}');
   });
 
   it('formats dates for each language without timezone shifts', () => {

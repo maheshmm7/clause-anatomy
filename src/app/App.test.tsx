@@ -4,14 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { SettingsProvider } from '../settings/SettingsProvider';
 import { expectNoAxeViolations, stubFetch, type FakeRoute } from '../test/helpers';
+import { te } from '../i18n/messages/te';
 import { App } from './App';
 
 const NATIVE_NAMES = { en: 'English', hi: 'हिन्दी', te: 'తెలుగు' } as const;
+const RENTAL_TITLE = 'Rent agreement (renting a flat)';
 
-/**
- * Renders the app. The landing page shows on every visit; unless `uiLanguage` is null,
- * the helper picks that language there, like a returning reader would.
- */
+type User = ReturnType<typeof userEvent.setup>;
+
+/** Renders the app and, unless `uiLanguage` is null, picks it on the landing page. */
 async function renderApp({
   aiAvailable = false,
   uiLanguage = 'en',
@@ -21,7 +22,6 @@ async function renderApp({
   uiLanguage?: 'en' | 'hi' | 'te' | null;
   routes?: Record<string, FakeRoute | FakeRoute[]>;
 } = {}) {
-  if (uiLanguage) window.localStorage.setItem('clause-anatomy:uiLanguage', uiLanguage);
   const fetch = stubFetch({ '/api/health': { body: { status: 'ok', aiAvailable } }, ...routes });
   const view = render(
     <SettingsProvider>
@@ -35,13 +35,24 @@ async function renderApp({
   return { ...view, ...fetch, user };
 }
 
-async function openRentalExample(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /Try an example/ }));
-  await user.click(await screen.findByRole('button', { name: /Rent agreement/ }));
-  return screen.findByRole('heading', { level: 1, name: 'Rent agreement (renting a flat)' });
+const sections = () => within(screen.getByRole('navigation', { name: 'Workspace sections' }));
+
+async function goTo(user: User, label: RegExp, heading: string | RegExp) {
+  await user.click(sections().getByRole('button', { name: label }));
+  return screen.findByRole('heading', { level: 1, name: heading });
 }
 
-describe('first visit', () => {
+async function openExample(user: User, name: RegExp = /Hyderabad/) {
+  await user.click(await screen.findByRole('button', { name: /Try an example/ }));
+  await user.click(await screen.findByRole('button', { name }));
+}
+
+async function openRentalExample(user: User) {
+  await openExample(user);
+  return screen.findByRole('heading', { level: 1, name: RENTAL_TITLE });
+}
+
+describe('landing page', () => {
   it('asks for a language in all three scripts and remembers the choice', async () => {
     const { user, container } = await renderApp({ uiLanguage: null });
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Choose your language');
@@ -50,20 +61,40 @@ describe('first visit', () => {
     await user.click(screen.getByRole('button', { name: /हिन्दी/ }));
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'आप कौन-सा कागज़ समझना चाहते हैं?' }),
+      await screen.findByRole('heading', { level: 1, name: 'बारीक लिखावट पढ़ें। हर धारा समझें।' }),
     ).toBeVisible();
     expect(document.documentElement.lang).toBe('hi');
     expect(window.localStorage.getItem('clause-anatomy:uiLanguage')).toBe('hi');
   });
+
+  it('can be reopened from the workspace and marks the current language', async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole('button', { name: /Language page/ }));
+    expect(screen.getByRole('button', { name: /English/ })).toHaveAttribute('aria-current', 'true');
+
+    await user.click(screen.getByRole('button', { name: /తెలుగు/ }));
+    expect(document.documentElement.lang).toBe('te');
+    expect(await screen.findByRole('navigation', { name: te.navMainLabel })).toBeVisible();
+  });
+
+  it('goes back to the landing page with the browser Back button', async () => {
+    await renderApp();
+    expect(screen.getByRole('heading', { level: 1, name: /Read the fine print/ })).toBeVisible();
+    window.history.back();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /Choose your language/ }),
+    ).toBeVisible();
+  });
 });
 
-describe('input screen', () => {
+describe('workspace home', () => {
   it('explains when live AI is unavailable and keeps examples usable', async () => {
     const { container } = await renderApp({ aiAvailable: false });
     expect(await screen.findByText(/Live explanations are not available/)).toBeVisible();
     expect(screen.getByRole('button', { name: /Take a photo/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Paste text/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Try an example/ })).toBeEnabled();
+    expect(sections().getByRole('button', { name: /^Clauses/ })).toBeDisabled();
     expect(screen.getByText(/This app explains papers in simple words/)).toBeVisible();
     await expectNoAxeViolations(container);
   });
@@ -80,9 +111,7 @@ describe('input screen', () => {
     );
     await user.click(screen.getByRole('button', { name: /Explain this paper/ }));
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Rent agreement (renting a flat)' }),
-    ).toBeVisible();
+    expect(await screen.findByRole('heading', { level: 1, name: RENTAL_TITLE })).toBeVisible();
     const request = calls.find((call) => call.path === '/api/analyze');
     expect(JSON.stringify(request?.body)).not.toMatch(/9876543210|ABCDE1234F/);
     expect(request?.body).toMatchObject({
@@ -115,210 +144,232 @@ describe('input screen', () => {
     await user.click(screen.getByRole('button', { name: /Explain this paper/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The AI is busy');
   });
+
+  it('applies display settings to the whole page', async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole('radio', { name: 'Dark' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    await user.click(screen.getByRole('radio', { name: 'Large text' }));
+    expect(document.documentElement.dataset.textSize).toBe('large');
+    await user.click(screen.getByRole('radio', { name: 'Auto' }));
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+  });
 });
 
-describe('result journey with the rent agreement example', () => {
-  it('explains, checks understanding and prepares next steps', async () => {
+// Whole journeys with axe scans: slower than unit tests, especially under coverage.
+describe('dashboard journey with the rent agreement example', { timeout: 30_000 }, () => {
+  it('shows the overview dashboard and relabels everything for the reader', async () => {
     const { user, container } = await renderApp();
     await openRentalExample(user);
     await expectNoAxeViolations(container);
 
-    // Private numbers in the example were hidden.
     expect(screen.getByText(/3 private details/)).toBeVisible();
+    expect(screen.getByText('11/11 checked')).toBeVisible();
+    const risks = screen.getByRole('region', { name: 'Check these first' });
+    expect(within(risks).getAllByRole('button')).toHaveLength(5);
 
-    // Perspective relabels the anatomy for the reader.
     await user.click(screen.getByRole('radio', { name: /Tenant/ }));
-    const firstPoint = screen.getByRole('article', { name: 'Monthly rent and late fee' });
-    expect(within(firstPoint).getByText('You must')).toBeVisible();
-    expect(within(firstPoint).getByText('Found in your paper')).toBeVisible();
+    expect(screen.getByText('Favours you')).toBeVisible();
 
-    // Teach-back: "Not sure" re-explains simply and adds a lawyer question.
-    await user.click(within(firstPoint).getByRole('button', { name: 'Not sure' }));
-    expect(within(firstPoint).getByText("That's okay. Here it is again, simply:")).toBeVisible();
-
-    // One point at a time on small screens.
-    await user.click(screen.getByRole('button', { name: /Next/ }));
-    expect(screen.getByText('Point 2 of 11')).toBeVisible();
-
-    // Tabs follow the WAI-ARIA keyboard pattern.
-    const pointsTab = screen.getByRole('tab', { name: /Key points/ });
-    pointsTab.focus();
-    await user.keyboard('{ArrowRight}');
-    const whatIfTab = screen.getByRole('tab', { name: /What if/ });
-    expect(whatIfTab).toHaveAttribute('aria-selected', 'true');
-    expect(whatIfTab).toHaveFocus();
-
-    // What-if simulator walks the tree deterministically.
-    expect(await screen.findByText('Have you already stayed more than 6 months?')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'No' }));
-    expect(await screen.findByText(/You are still in the 6-month lock-in period/)).toBeVisible();
-    expect(screen.getByText('Risky')).toBeVisible();
-    await expectNoAxeViolations(container);
-
-    // Next steps: personal checklist and the lawyer brief with the unsure point.
-    await user.click(screen.getByRole('tab', { name: /Next steps/ }));
-    expect(await screen.findByText('What you must do')).toBeVisible();
-    expect(
-      screen.getByText(
-        'I did not understand "Monthly rent and late fee". What does it mean for me?',
-      ),
-    ).toBeVisible();
-    expect(screen.getByRole('link', { name: /Call 15100/ })).toHaveAttribute('href', 'tel:15100');
-    await expectNoAxeViolations(container);
-
-    // Original text is shown with private numbers hidden.
-    await user.click(screen.getByRole('tab', { name: /Original/ }));
-    expect(await screen.findByText(/\[PHONE HIDDEN\]/)).toBeVisible();
-
-    // Start over returns to the input screen.
-    await user.click(screen.getByRole('button', { name: 'Start over' }));
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What paper do you want to understand?',
-      }),
-    ).toBeVisible();
+    await user.click(within(risks).getByRole('button', { name: /The first 6 months are locked/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Clauses' })).toBeVisible();
+    expect(screen.getByRole('article', { name: 'The first 6 months are locked' })).toBeVisible();
   });
 
-  it('answers questions about the paper with verified quotes', async () => {
-    const { user, calls } = await renderApp({
+  it('works through clauses: anatomy, teach-back, notes, flags and filters', async () => {
+    const { user, container } = await renderApp();
+    await openRentalExample(user);
+    await user.click(screen.getByRole('radio', { name: /Tenant/ }));
+    await goTo(user, /^Clauses/, 'Clauses');
+    await expectNoAxeViolations(container);
+
+    const first = screen.getByRole('article', { name: 'Monthly rent and late fee' });
+    expect(within(first).getByText('You must')).toBeVisible();
+    expect(within(first).getByText('Found in your paper')).toBeVisible();
+
+    await user.click(within(first).getByRole('button', { name: 'calendar month' }));
+    expect(within(first).getByText('From your paper')).toBeVisible();
+
+    await user.click(within(first).getByRole('button', { name: 'Not sure' }));
+    expect(within(first).getByText("That's okay. Here it is again, simply:")).toBeVisible();
+
+    await user.type(
+      within(first).getByLabelText('My notes on this clause'),
+      'Is there a grace period?',
+    );
+    const flag = within(first).getByRole('button', { name: 'Ask a lawyer about this' });
+    await user.click(flag);
+    expect(flag).toHaveAttribute('aria-pressed', 'true');
+    expect(within(first).getByText('Flagged for a lawyer')).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: /Next/ }));
+    expect(screen.getByText('Clause 2 of 11')).toBeVisible();
+    await user.keyboard('j');
+    expect(screen.getByText('Clause 3 of 11')).toBeVisible();
+    await user.keyboard('k');
+    expect(screen.getByText('Clause 2 of 11')).toBeVisible();
+
+    await user.click(screen.getByRole('radio', { name: 'Flagged' }));
+    const jump = screen.getByRole('combobox', { name: 'Jump to clause' });
+    expect(within(jump).getAllByRole('option')).toHaveLength(1);
+    await user.click(screen.getByRole('radio', { name: 'Not understood' }));
+    expect(
+      within(screen.getByRole('combobox', { name: 'Jump to clause' })).getByRole('option'),
+    ).toHaveTextContent('Monthly rent and late fee');
+    await user.type(screen.getByRole('searchbox', { name: 'Search clauses' }), 'zzzz');
+    expect(screen.getByText('No clauses match.')).toBeVisible();
+
+    // Notes and flags go into the lawyer brief.
+    await goTo(user, /^Action plan/, 'Action plan');
+    expect(
+      screen.getByText('About "Monthly rent and late fee": Is there a grace period?'),
+    ).toBeVisible();
+    await expectNoAxeViolations(container);
+  });
+
+  it('links clauses and the annotated document both ways', async () => {
+    const { user, container } = await renderApp();
+    await openRentalExample(user);
+    await goTo(user, /^Clauses/, 'Clauses');
+    const first = screen.getByRole('article', { name: 'Monthly rent and late fee' });
+    await user.click(within(first).getByRole('button', { name: /Show in document/ }));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your paper (private numbers hidden)' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: /^Clause \d+: Monthly rent and late fee$/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await expectNoAxeViolations(container);
+
+    await user.click(screen.getByRole('button', { name: /^Clause \d+: Landlord visits$/ }));
+    await user.click(screen.getByRole('button', { name: /Open clause/ }));
+    expect(await screen.findByRole('article', { name: 'Landlord visits' })).toBeVisible();
+  });
+
+  it('maps risks, simulates situations and explains legal words', async () => {
+    const { user, container } = await renderApp();
+    await openRentalExample(user);
+
+    await goTo(user, /^Risk radar/, 'Risk radar');
+    const matrix = screen.getByRole('table', { name: 'Risk radar' });
+    expect(within(matrix).getByRole('columnheader', { name: 'Favours Landlord' })).toBeVisible();
+    await user.click(screen.getByRole('radio', { name: /Tenant/ }));
+    expect(
+      within(matrix).getByRole('columnheader', { name: 'Favours the other side' }),
+    ).toBeVisible();
+    expect(screen.getByRole('region', { name: 'What can go wrong' })).toBeVisible();
+    await expectNoAxeViolations(container);
+
+    await goTo(user, /^What if/, 'What if?');
+    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    expect(screen.getByRole('heading', { name: 'What the paper says happens' })).toBeVisible();
+    await expectNoAxeViolations(container);
+    await user.click(screen.getByRole('button', { name: /Start again/ }));
+    expect(screen.getByRole('button', { name: 'No' })).toBeVisible();
+
+    await goTo(user, /^Glossary/, 'Glossary');
+    const terms = screen.getAllByRole('term');
+    expect(terms.length).toBeGreaterThan(3);
+    await user.type(screen.getByRole('searchbox', { name: 'Search words' }), 'calendar');
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['calendar month']);
+    await expectNoAxeViolations(container);
+  });
+
+  it('answers questions about a clause with quotes from the paper', async () => {
+    const { user, calls, container } = await renderApp({
       aiAvailable: true,
       routes: {
         '/api/ask': {
           body: {
             basis: 'document',
-            answer: 'Only with written permission first.',
-            quotes: [{ text: 'without the prior written consent of the Lessor', verified: true }],
+            answer: 'You pay Rs. 200 extra for every late day.',
+            quotes: [{ text: 'A late fee of Rs. 200 per day', verified: true }],
           },
         },
       },
     });
     await openRentalExample(user);
-    await user.click(screen.getByRole('tab', { name: /Ask/ }));
-    await user.type(
-      await screen.findByLabelText('Ask about your paper'),
-      'Can my friend stay with me?',
-    );
-    await user.click(screen.getByRole('button', { name: /^Ask$/ }));
+    await goTo(user, /^Clauses/, 'Clauses');
+    await user.click(screen.getByRole('button', { name: /Ask about this clause/ }));
 
-    expect(await screen.findByText('Only with written permission first.')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Ask about your paper' }),
+    ).toBeVisible();
+    const box = screen.getByRole('textbox', { name: 'Ask about your paper' });
+    expect(box).toHaveValue('What does "Monthly rent and late fee" mean for me?');
+    await user.click(within(box.closest('form')!).getByRole('button', { name: 'Ask' }));
+
+    expect(await screen.findByText('You pay Rs. 200 extra for every late day.')).toBeVisible();
     expect(screen.getByText('Answered from your paper')).toBeVisible();
-    const request = calls.find((call) => call.path === '/api/ask');
-    expect(request?.body).toMatchObject({
-      question: 'Can my friend stay with me?',
+    expect(calls.find((call) => call.path === '/api/ask')?.body).toMatchObject({
+      question: 'What does "Monthly rent and late fee" mean for me?',
       language: 'en',
     });
-    expect(JSON.stringify(request?.body)).not.toContain('98480');
+    await expectNoAxeViolations(container);
   });
 
-  it('shows the example in Telugu without needing live AI', async () => {
-    const { user } = await renderApp({ uiLanguage: 'te' });
-    await user.click(screen.getByRole('button', { name: /ఉదాహరణ చూడండి/ }));
-    await user.click(await screen.findByRole('button', { name: /అద్దె ఒప్పందం/ }));
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'అద్దె ఒప్పందం (ఫ్లాట్ అద్దెకు తీసుకోవడం)',
-      }),
-    ).toBeVisible();
-    await waitFor(() => expect(document.documentElement.lang).toBe('te'));
-  });
-
-  it('falls back to English for an example without a translation when AI is offline', async () => {
-    const { user } = await renderApp({ uiLanguage: 'hi' });
-    await user.click(screen.getByRole('button', { name: /उदाहरण देखें/ }));
-    await user.click(await screen.findByRole('button', { name: /बाउंस चेक/ }));
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Legal notice for a bounced cheque' }),
-    ).toBeVisible();
-    expect(screen.getByText(/यह उदाहरण अंग्रेज़ी में दिखाया गया है/)).toBeVisible();
-    expect(screen.getByText('इस कागज़ में समय-सीमा है')).toBeVisible();
-    expect(screen.getByText('वे आपसे क्या चाहते हैं')).toBeVisible();
-  });
-});
-
-describe('navigation and language', () => {
-  it('shows the landing page on every visit, marking the last used language', async () => {
-    window.localStorage.setItem('clause-anatomy:uiLanguage', 'te');
-    const { user } = await renderApp({ uiLanguage: null });
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Choose your language');
-    expect(screen.getByRole('button', { name: /తెలుగు/ })).toHaveAttribute('aria-current', 'true');
-    await user.click(screen.getByRole('button', { name: /English/ }));
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What paper do you want to understand?',
-      }),
-    ).toBeVisible();
-  });
-
-  it('switches language from a readable header menu, with keyboard support', async () => {
+  it('keeps several papers in the library and compares two of them', async () => {
     const { user, container } = await renderApp();
-    const menuButton = screen.getByRole('button', { name: /App language/ });
-    await user.click(menuButton);
-    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
-    const menu = within(screen.getByRole('list', { name: 'App language' }));
-    const current = menu.getByRole('button', { name: /English/ });
-    expect(current).toHaveAttribute('aria-current', 'true');
-    expect(current).toHaveFocus();
+    await openRentalExample(user);
+    expect(sections().getByRole('button', { name: /^Compare/ })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: /New paper/ }));
+    await openExample(user, /Bengaluru/);
+    await screen.findByRole('heading', { level: 1, name: /Bengaluru/ });
+
+    await goTo(user, /^Compare/, 'Compare papers');
+    expect(screen.getByRole('region', { name: 'Similar clauses side by side' })).toBeVisible();
+    expect(screen.getByRole('table')).toHaveTextContent('₹22,000');
     await expectNoAxeViolations(container);
 
-    await user.keyboard('{ArrowDown}');
-    expect(menu.getByRole('button', { name: /हिन्दी/ })).toHaveFocus();
+    await user.click(sections().getByRole('button', { name: /^Workspace/ }));
+    const library = screen.getByRole('region', { name: 'Your papers in this session' });
+    expect(within(library).getAllByRole('button', { name: 'Open' })).toHaveLength(2);
+    await user.click(within(library).getAllByRole('button', { name: /^Remove/ })[0]!);
+    expect(within(library).getAllByRole('button', { name: 'Open' })).toHaveLength(1);
+  });
+
+  it('finds clauses from anywhere with the command palette', async () => {
+    const { user } = await renderApp();
+    await openRentalExample(user);
+
+    await user.keyboard('{Control>}k{/Control}');
+    const dialog = await screen.findByRole('dialog', { name: 'Search the workspace' });
+    await user.keyboard('deposit');
+    expect(
+      within(dialog).getByRole('option', { name: /Getting your deposit back/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await expectNoAxeViolations(dialog);
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByRole('article', { name: 'Getting your deposit back' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Search/ }));
+    expect(screen.getByRole('dialog')).toBeVisible();
     await user.keyboard('{Escape}');
-    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
-    expect(menuButton).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
 
+  it('opens the menu drawer on small screens and closes it after choosing', async () => {
+    const { user } = await renderApp();
+    await openRentalExample(user);
+    const menuButton = screen.getByRole('button', { name: 'Open menu' });
     await user.click(menuButton);
-    await user.click(
-      within(screen.getByRole('list', { name: 'App language' })).getByRole('button', {
-        name: /తెలుగు/,
-      }),
-    );
-    expect(
-      await screen.findByRole('heading', { level: 1, name: /మీరు ఏ కాగితాన్ని/ }),
-    ).toBeVisible();
-    expect(document.documentElement.lang).toBe('te');
-  });
+    const drawer = screen.getByRole('dialog', { name: 'Workspace sections' });
+    await user.click(within(drawer).getByRole('button', { name: /^Glossary/ }));
 
-  it('returns to the landing page from the header and keeps the current result', async () => {
-    const { user } = await renderApp();
-    await openRentalExample(user);
-    expect(document.title).toBe('Rent agreement (renting a flat) · Clause Anatomy');
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Glossary' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(heading).toHaveFocus();
 
-    await user.click(screen.getByRole('button', { name: /App language/ }));
-    await user.click(screen.getByRole('button', { name: 'Open language page' }));
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Choose your language');
-
-    await user.click(screen.getByRole('button', { name: /हिन्दी/ }));
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Rent agreement (renting a flat)' }),
-    ).toBeVisible();
-    // The paper stays explained in English, and the app says so.
-    expect(screen.getByText(/यह कागज़ English में समझाया गया है/)).toBeVisible();
-  });
-
-  it('supports the browser back button: result → start → language page', async () => {
-    const { user } = await renderApp();
-    await openRentalExample(user);
-
-    window.history.back();
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What paper do you want to understand?',
-      }),
-    ).toBeVisible();
-
-    window.history.back();
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Choose your language'),
-    );
-  });
-
-  it('the brand in the header also leads to the landing page', async () => {
-    const { user } = await renderApp();
-    await user.click(screen.getByRole('button', { name: /Clause Anatomy/ }));
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Choose your language');
+    // Escape closes the drawer and returns focus to the menu button.
+    await user.click(menuButton);
+    expect(screen.getByRole('dialog')).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(menuButton).toHaveFocus();
   });
 });
