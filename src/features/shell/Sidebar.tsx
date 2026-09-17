@@ -10,6 +10,8 @@ export interface SidebarProps {
   onOpenSettings: () => void;
   /** Icon-only rail on large screens. Labels stay available to screen readers. */
   collapsed?: boolean;
+  /** Large screens only: collapse or expand the rail from its own header. */
+  onToggleCollapsed?: () => void;
   /** Called after any navigation (the phone drawer closes itself). */
   onAfterNavigate?: () => void;
 }
@@ -24,6 +26,7 @@ export function Sidebar({
   onNavigate,
   onOpenSettings,
   collapsed = false,
+  onToggleCollapsed,
   onAfterNavigate,
 }: SidebarProps) {
   const { t } = useI18n();
@@ -59,13 +62,34 @@ export function Sidebar({
 
   return (
     <div className={`rail${collapsed ? ' rail--collapsed' : ''}`}>
-      <a className="rail__brand" href="#/" title={tip(t('footerHome'))}>
-        <Logo size={collapsed ? 34 : 38} />
-        <span className="rail__brand-text">
-          <span className="rail__name">{t('appName')}</span>
-          <span className="rail__tagline">{t('brandTagline')}</span>
-        </span>
-      </a>
+      {/* Header: brand, and the toggle right next to the sidebar it controls. When
+          collapsed, only the expand toggle stays here and the brand moves to the top bar. */}
+      <div className="rail__head">
+        {!collapsed && (
+          <a className="rail__brand" href="#/">
+            <Logo size={34} />
+            <span className="rail__brand-text">
+              <span className="rail__name">{t('appName')}</span>
+              <span className="rail__tagline">{t('brandTagline')}</span>
+            </span>
+          </a>
+        )}
+        {onToggleCollapsed && (
+          <button
+            type="button"
+            className="icon-btn rail__toggle"
+            aria-expanded={!collapsed}
+            aria-controls="workspace-sidebar"
+            title={t(collapsed ? 'expandSidebar' : 'collapseSidebar')}
+            onClick={onToggleCollapsed}
+          >
+            <Icon name="sidebar" />
+            <span className="visually-hidden">
+              {t(collapsed ? 'expandSidebar' : 'collapseSidebar')}
+            </span>
+          </button>
+        )}
+      </div>
 
       <nav className="rail__nav" aria-label={t('navMainLabel')}>
         <ul className="rail__list">

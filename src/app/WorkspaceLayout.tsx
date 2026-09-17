@@ -151,6 +151,7 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
           <Sidebar
             state={state}
             collapsed={railCollapsed}
+            onToggleCollapsed={() => setCollapsed(!collapsed)}
             onNavigate={(view, docId) => go(view, { docId })}
             onOpenSettings={openSettings}
           />
@@ -161,8 +162,9 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
             view={state.view}
             doc={doc}
             wide={wide}
-            sidebarExpanded={wide ? !collapsed : drawerOpen}
-            onToggleSidebar={() => (wide ? setCollapsed(!collapsed) : setMenuOpen(true))}
+            railCollapsed={railCollapsed}
+            menuOpen={drawerOpen}
+            onOpenMenu={() => setMenuOpen(true)}
             onOpenPalette={() => setPaletteOpen(true)}
             onOpenSettings={openSettings}
             onNavigate={(view) => go(view)}

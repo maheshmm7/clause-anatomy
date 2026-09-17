@@ -5,16 +5,18 @@ import { Logo } from '../../components/Logo';
 import { useI18n } from '../../i18n/I18nProvider';
 
 /**
- * Top bar: sidebar toggle, breadcrumb (workspace / paper / section), the paper's status,
- * search, settings and "new paper". The toggle collapses the sidebar on large screens and
- * opens the menu drawer on phones and tablets; small screens also show the brand.
+ * Top bar: breadcrumb (workspace / paper / section), the paper's status, search, settings
+ * and "new paper". Phones and tablets also get the menu button and the logo; on large
+ * screens the brand appears here only while the sidebar is collapsed (the sidebar's own
+ * header holds the brand and the collapse toggle otherwise).
  */
 export function Topbar({
   view,
   doc,
   wide,
-  sidebarExpanded,
-  onToggleSidebar,
+  railCollapsed,
+  menuOpen,
+  onOpenMenu,
   onOpenPalette,
   onOpenSettings,
   onNavigate,
@@ -23,8 +25,9 @@ export function Topbar({
   doc: WorkspaceDoc | null;
   /** Large screen: the sidebar is part of the page rather than a drawer. */
   wide: boolean;
-  sidebarExpanded: boolean;
-  onToggleSidebar: () => void;
+  railCollapsed: boolean;
+  menuOpen: boolean;
+  onOpenMenu: () => void;
   onOpenPalette: () => void;
   onOpenSettings: () => void;
   onNavigate: (view: View) => void;
@@ -37,21 +40,26 @@ export function Topbar({
 
   return (
     <header className="topbar">
-      <button
-        type="button"
-        className="icon-btn topbar__toggle"
-        aria-expanded={sidebarExpanded}
-        aria-controls={wide ? 'workspace-sidebar' : 'workspace-drawer'}
-        onClick={onToggleSidebar}
-      >
-        <Icon name={wide ? 'sidebar' : 'menu'} />
-        <span className="visually-hidden">
-          {wide ? t(sidebarExpanded ? 'collapseSidebar' : 'expandSidebar') : t('openMenu')}
-        </span>
-      </button>
       {!wide && (
+        <button
+          type="button"
+          className="icon-btn"
+          aria-expanded={menuOpen}
+          aria-controls="workspace-drawer"
+          onClick={onOpenMenu}
+        >
+          <Icon name="menu" />
+          <span className="visually-hidden">{t('openMenu')}</span>
+        </button>
+      )}
+      {(!wide || railCollapsed) && (
         <a className="topbar__brand" href="#/">
           <Logo size={32} />
+          {railCollapsed && (
+            <span className="topbar__name" aria-hidden="true">
+              {t('appName')}
+            </span>
+          )}
           <span className="visually-hidden">{t('appName')}</span>
         </a>
       )}
