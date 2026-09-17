@@ -423,7 +423,7 @@ describe('dashboard journey with the rent agreement example', { timeout: 30_000 
     expect(within(library).getAllByRole('button', { name: 'Open' })).toHaveLength(1);
   });
 
-  it('explains an open paper again in another language, keeping notes and flags', async () => {
+  it('explains an open paper again in another language, switching the interface too', async () => {
     const { user } = await renderApp({
       aiAvailable: true,
       routes: { '/api/analyze': { body: RENTAL_SAMPLE.analyses.hi } },
@@ -446,9 +446,14 @@ describe('dashboard journey with the rent agreement example', { timeout: 30_000 
       }),
     ).toBeVisible();
     expect(window.localStorage.getItem('clause-anatomy:explanationLanguage')).toBe('hi');
-    await goTo(user, /^Clauses/, 'Clauses');
-    // The interface stays in English; only the explanation language changed.
-    expect(screen.getByText('Flagged for a lawyer')).toBeVisible();
+
+    // Reading in Hindi with English menus feels broken, so the interface follows.
+    expect(document.documentElement.lang).toBe('hi');
+    const hindiSections = within(screen.getByRole('navigation', { name: hi.navMainLabel }));
+    await user.click(hindiSections.getByRole('button', { name: new RegExp(`^${hi.navClauses}`) }));
+
+    // The reader's flag survived the change.
+    expect(await screen.findByText(hi.flaggedForLawyer)).toBeVisible();
   });
 
   it('keeps the papers of this tab through a page refresh', async () => {

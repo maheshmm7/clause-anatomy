@@ -32,7 +32,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             {t('settingsLanguageSection')}
           </h3>
           <LanguageSwitch />
-          <ExplanationLanguageSelect />
+          <div className="settings-field">
+            <ExplanationLanguageSelect />
+            <p className="hint">{t('explanationLanguageHint')}</p>
+          </div>
           <ReadingLevelSwitch />
         </section>
         <section className="settings-group" aria-labelledby="settings-display">

@@ -165,7 +165,7 @@ export const en = {
   unverifiedCount:
     '{count} clauses could not be matched to your paper. They are marked — check the original.',
   explainedIn:
-    'This paper is explained in {language}. To explain it in another language, add it again.',
+    'This paper is explained in {language}. You can change that with “Explain in” at the top of the Overview.',
 
   /* Overview */
   overviewEyebrow: 'Paper overview',
@@ -447,7 +447,8 @@ export const en = {
   legalUpdated: 'Last updated: {date}',
   legalBack: 'Back to home',
   legalContents: 'On this page',
-  explainAgainHint: 'Changing this explains the paper again in the new language.',
+  explanationLanguageHint:
+    'Used for the next paper you add. To change a paper that is already open, use “Explain in” on its Overview.',
 } as const;
 
 export type MessageKey = keyof typeof en;

@@ -5,12 +5,7 @@ import {
 } from '../../../shared/languages';
 import type { AnalysisResult } from '../../../shared/schema';
 import { useActiveDoc } from '../../app/WorkspaceContext';
-import {
-  FairnessBar,
-  ReadingLevelSwitch,
-  RolePicker,
-  useCountdown,
-} from '../../components/controls';
+import { FairnessBar, RolePicker, useCountdown } from '../../components/controls';
 import { Icon, type IconName } from '../../components/Icon';
 import { Select } from '../../components/Select';
 import { Badge, LegalHelpPanel, Notice, Panel, SpeakButton, ViewHeader } from '../../components/ui';
@@ -65,11 +60,27 @@ export function OverviewView() {
         titleLang={language}
         headingRef={headingRef}
         actions={
-          <SpeakButton
-            id="summary"
-            text={`${analysis.documentType}. ${analysis.summary}`}
-            language={language}
-          />
+          <>
+            <Select<ExplanationLanguage>
+              label={t('explanationLanguageLabel')}
+              hideLabel
+              compact
+              buttonIcon="globe"
+              value={language}
+              options={EXPLANATION_LANGUAGES.map((option) => ({
+                value: option,
+                label: LANGUAGE_INFO[option].nativeName,
+                hint: option === 'en' ? undefined : LANGUAGE_INFO[option].englishName,
+                lang: option,
+              }))}
+              onChange={explainAgain}
+            />
+            <SpeakButton
+              id="summary"
+              text={`${analysis.documentType}. ${analysis.summary}`}
+              language={language}
+            />
+          </>
         }
       >
         <p className="view-header__lead" lang={language}>
@@ -177,30 +188,12 @@ export function OverviewView() {
               icon="user"
               className="panel--wide"
             >
-              <div className="stack-row">
-                <RolePicker
-                  hideLegend
-                  analysis={analysis}
-                  perspective={perspective}
-                  onChange={(next) => dispatch({ type: 'setPerspective', perspective: next })}
-                />
-                <ReadingLevelSwitch />
-              </div>
-              <div className="paper-language">
-                <Select<ExplanationLanguage>
-                  label={t('explanationLanguageLabel')}
-                  labelIcon="globe"
-                  value={language}
-                  options={EXPLANATION_LANGUAGES.map((option) => ({
-                    value: option,
-                    label: LANGUAGE_INFO[option].nativeName,
-                    hint: option === 'en' ? undefined : LANGUAGE_INFO[option].englishName,
-                    lang: option,
-                  }))}
-                  onChange={explainAgain}
-                />
-                <p className="hint">{t('explainAgainHint')}</p>
-              </div>
+              <RolePicker
+                hideLegend
+                analysis={analysis}
+                perspective={perspective}
+                onChange={(next) => dispatch({ type: 'setPerspective', perspective: next })}
+              />
             </Panel>
 
             <Panel number="01B" title={t('fairnessTitle')} icon="scale">

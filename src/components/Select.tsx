@@ -24,6 +24,7 @@ export function Select<T extends string>({
   hideLabel = false,
   compact = false,
   labelIcon,
+  buttonIcon,
 }: {
   label: string;
   value: T;
@@ -32,6 +33,8 @@ export function Select<T extends string>({
   hideLabel?: boolean;
   compact?: boolean;
   labelIcon?: Parameters<typeof Icon>[0]['name'];
+  /** Shown inside the button, for compact selects without a visible label. */
+  buttonIcon?: Parameters<typeof Icon>[0]['name'];
 }) {
   const id = useId();
   const labelId = `${id}-label`;
@@ -185,6 +188,7 @@ export function Select<T extends string>({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
       >
+        {buttonIcon && <Icon name={buttonIcon} />}
         <span className="select__value" lang={selected?.lang}>
           {selected?.label}
           {selected?.hint && <span className="select__hint"> · {selected.hint}</span>}

@@ -9,7 +9,7 @@ import {
   useState,
   type MouseEvent,
 } from 'react';
-import type { ExplanationLanguage } from '../../shared/languages';
+import { isUiLanguage, type ExplanationLanguage } from '../../shared/languages';
 import { ApiClientError, api } from '../api/client';
 import { Spinner } from '../components/ui';
 import { LandingPage } from '../features/site/LandingPage';
@@ -100,7 +100,7 @@ function initialState(route: Route): WorkspaceState {
 
 function Shell() {
   const { t } = useI18n();
-  const { explanationLanguage, setExplanationLanguage } = useSettings();
+  const { explanationLanguage, setExplanationLanguage, setUiLanguage } = useSettings();
   const [initialRoute] = useState(() => parseRoute(window.location.hash));
   const [page, setPage] = useState<Page>(() => pageOf(initialRoute));
   const [state, dispatch] = useReducer(workspaceReducer, initialRoute, initialState);
@@ -221,10 +221,13 @@ function Shell() {
   const explainAgain = useCallback(
     (language: ExplanationLanguage) => {
       if (!doc || doc.loaded.analysis.language === language) return;
-      setExplanationLanguage(language);
+      // Reading a paper in Telugu but navigating in English feels broken, so the whole
+      // interface follows when the chosen language is one we have translated.
+      if (isUiLanguage(language)) setUiLanguage(language);
+      else setExplanationLanguage(language);
       void flow.explainAgain(doc.id, doc.loaded, language);
     },
-    [doc, flow, setExplanationLanguage],
+    [doc, flow, setExplanationLanguage, setUiLanguage],
   );
 
   const api_: WorkspaceApi = useMemo(

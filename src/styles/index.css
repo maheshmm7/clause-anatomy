@@ -1013,10 +1013,14 @@ textarea:disabled {
   opacity: 0.8;
 }
 
-.paper-language {
+.settings-field {
   display: grid;
   gap: 0.375rem;
-  max-width: 24rem;
+}
+
+/* Compact selects sit beside buttons in a view header. */
+.view-header__actions .select--compact .select__button {
+  min-height: 2.25rem;
 }
 
 .stack-row {
