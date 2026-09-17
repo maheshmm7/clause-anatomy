@@ -1,4 +1,5 @@
 import { createContext, useContext, type Dispatch } from 'react';
+import type { ExplanationLanguage } from '../../shared/languages';
 import type { View, WorkspaceAction, WorkspaceDoc, WorkspaceState } from './workspace';
 
 /**
@@ -12,6 +13,8 @@ export interface WorkspaceApi {
   dispatch: Dispatch<WorkspaceAction>;
   go: (view: View, options?: { docId?: string; pointId?: string }) => void;
   ask: (question: string) => void;
+  /** Explains the open paper again in another language. */
+  explainAgain: (language: ExplanationLanguage) => void;
   askDraft: string;
   setAskDraft: (question: string) => void;
 }

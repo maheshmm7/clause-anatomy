@@ -38,6 +38,8 @@ function toFlowError(error: unknown): FlowError | null {
 export interface DocumentFlowOptions {
   explanationLanguage: ExplanationLanguage;
   aiAvailable: boolean;
+  /** Called when an open paper has been explained again in another language. */
+  onReplaced?: (docId: string, loaded: LoadedDocument) => void;
   /** Receives every finished analysis (the workspace adds it to the library). */
   onLoaded: (document: LoadedDocument) => void;
 }
@@ -50,15 +52,18 @@ export function useDocumentFlow({
   explanationLanguage,
   aiAvailable,
   onLoaded,
+  onReplaced,
 }: DocumentFlowOptions) {
   const [state, dispatch] = useReducer(flowReducer, initialFlowState);
   const controllerRef = useRef<AbortController | null>(null);
   const cacheRef = useRef(new Map<string, AnalysisResult>());
   const onLoadedRef = useRef(onLoaded);
+  const onReplacedRef = useRef(onReplaced);
 
   useEffect(() => {
     onLoadedRef.current = onLoaded;
-  }, [onLoaded]);
+    onReplacedRef.current = onReplaced;
+  }, [onLoaded, onReplaced]);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 
@@ -71,7 +76,8 @@ export function useDocumentFlow({
     [pendingPreview],
   );
 
-  const run = useCallback(async (task: (signal: AbortSignal) => Promise<LoadedDocument>) => {
+  /** A task returns the paper to add to the library, or `null` if it updated one in place. */
+  const run = useCallback(async (task: (signal: AbortSignal) => Promise<LoadedDocument | null>) => {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -79,13 +85,32 @@ export function useDocumentFlow({
       const document = await task(controller.signal);
       if (controller.signal.aborted) return;
       dispatch({ type: 'finished' });
-      onLoadedRef.current(document);
+      if (document) onLoadedRef.current(document);
     } catch (error) {
       if (controller.signal.aborted) return;
       const flowError = toFlowError(error);
       dispatch(flowError ? { type: 'failed', error: flowError } : { type: 'finished' });
     }
   }, []);
+
+  /** Explains a paper already in the library again, in `language`. */
+  const explainAgain = useCallback(
+    (docId: string, loaded: LoadedDocument, language: ExplanationLanguage) =>
+      run(async (signal) => {
+        dispatch({ type: 'progress', step: 'explaining' });
+        const sample = loaded.sampleId
+          ? SAMPLES.find((candidate) => candidate.id === loaded.sampleId)
+          : undefined;
+        const precomputed = sample ? (await sample.load()).analyses[language] : undefined;
+        const analysis =
+          precomputed ?? (await api.analyze({ text: loaded.text, language }, signal));
+        const next: LoadedDocument = { ...loaded, analysis, languageFallback: false };
+        onReplacedRef.current?.(docId, next);
+        // The paper stays in place; nothing new is added to the library.
+        return null;
+      }),
+    [run],
+  );
 
   const analyze = useCallback(
     async (rawText: string, signal: AbortSignal, partialRead = false): Promise<LoadedDocument> => {
@@ -169,12 +194,13 @@ export function useDocumentFlow({
             text,
             analysis,
             origin: 'sample',
+            sampleId: id,
             redactions: total,
             partialRead: false,
             languageFallback: !precomputed,
           };
         }
-        return { ...(await analyze(data.text, signal)), origin: 'sample' };
+        return { ...(await analyze(data.text, signal)), origin: 'sample', sampleId: id };
       }),
     [aiAvailable, analyze, explanationLanguage, run],
   );
@@ -186,5 +212,14 @@ export function useDocumentFlow({
 
   const cancelConsent = useCallback(() => dispatch({ type: 'consentCancelled' }), []);
 
-  return { state, submitText, submitFile, confirmConsent, cancelConsent, loadSample, cancel };
+  return {
+    state,
+    submitText,
+    submitFile,
+    confirmConsent,
+    cancelConsent,
+    loadSample,
+    explainAgain,
+    cancel,
+  };
 }

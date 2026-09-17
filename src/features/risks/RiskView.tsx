@@ -133,10 +133,10 @@ export function RiskView() {
       </ScrollArea>
 
       <div className="dash-grid">
-        <Panel number="A" title={t('fairnessTitle')} icon="scale">
+        <Panel number="04A" title={t('fairnessTitle')} icon="scale">
           <FairnessBar analysis={analysis} perspective={doc.perspective} />
         </Panel>
-        <Panel number="B" title={t('consequencesTitle')} icon="alert" className="panel--danger">
+        <Panel number="04B" title={t('consequencesTitle')} icon="alert" className="panel--danger">
           {consequences.length === 0 ? (
             <p className="empty">{t('consequencesEmpty')}</p>
           ) : (

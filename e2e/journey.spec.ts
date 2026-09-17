@@ -147,6 +147,25 @@ test.describe('reader journey', () => {
     await expectNoHorizontalScroll(page);
   });
 
+  test('keeps the open paper through a refresh and can change its language', async ({ page }) => {
+    await openWorkspace(page);
+    await openRentalExample(page);
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Rent agreement (renting a flat)' }),
+    ).toBeVisible();
+    await expect(page.getByText(/3 private details/)).toBeVisible();
+
+    // The example has Hindi ready, so no AI call is needed to re-explain it.
+    await page.getByRole('combobox', { name: 'Explain in' }).click();
+    await page.getByRole('option', { name: /हिन्दी/ }).click();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'किराया समझौता (फ़्लैट किराए पर लेना)' }),
+    ).toBeVisible();
+    await expectAccessible(page);
+    await expectNoHorizontalScroll(page);
+  });
+
   test('compares two example papers side by side', async ({ page }) => {
     await openWorkspace(page);
     await openRentalExample(page);

@@ -423,6 +423,62 @@ describe('dashboard journey with the rent agreement example', { timeout: 30_000 
     expect(within(library).getAllByRole('button', { name: 'Open' })).toHaveLength(1);
   });
 
+  it('explains an open paper again in another language, keeping notes and flags', async () => {
+    const { user } = await renderApp({
+      aiAvailable: true,
+      routes: { '/api/analyze': { body: RENTAL_SAMPLE.analyses.hi } },
+    });
+    await openRentalExample(user);
+
+    // Some work by the reader that must survive the change.
+    await goTo(user, /^Clauses/, 'Clauses');
+    const first = screen.getByRole('article', { name: 'Monthly rent and late fee' });
+    await user.click(within(first).getByRole('button', { name: 'Ask a lawyer about this' }));
+    await goTo(user, /^Overview/, RENTAL_TITLE);
+
+    await user.click(screen.getByRole('combobox', { name: 'Explain in' }));
+    await user.click(screen.getByRole('option', { name: /हिन्दी/ }));
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'किराया समझौता (फ़्लैट किराए पर लेना)',
+      }),
+    ).toBeVisible();
+    expect(window.localStorage.getItem('clause-anatomy:explanationLanguage')).toBe('hi');
+    await goTo(user, /^Clauses/, 'Clauses');
+    // The interface stays in English; only the explanation language changed.
+    expect(screen.getByText('Flagged for a lawyer')).toBeVisible();
+  });
+
+  it('keeps the papers of this tab through a page refresh', async () => {
+    const { user, unmount } = await renderApp();
+    await openRentalExample(user);
+    await waitFor(() =>
+      expect(window.sessionStorage.getItem('clause-anatomy:session')).toContain(RENTAL_TITLE),
+    );
+
+    // A refresh: the app starts again and reads the same session storage.
+    unmount();
+    await renderApp({ hash: '#/workspace/overview' });
+    expect(await screen.findByRole('heading', { level: 1, name: RENTAL_TITLE })).toBeVisible();
+    expect(sections().getByRole('button', { name: RENTAL_TITLE })).toBeVisible();
+  });
+
+  it('shows the Simple and Detailed explanations differently', async () => {
+    const { user } = await renderApp();
+    await openRentalExample(user);
+    await goTo(user, /^Clauses/, 'Clauses');
+    const clause = () => screen.getByRole('article', { name: 'Monthly rent and late fee' });
+
+    const simple = within(clause()).getByText(/Pay Rs. 22,000 rent by the 5th/);
+    expect(simple).toBeVisible();
+
+    await user.click(screen.getByRole('radio', { name: 'Detailed' }));
+    expect(within(clause()).getByText(/no grace period/)).toBeVisible();
+    expect(screen.queryByText(/Pay Rs. 22,000 rent by the 5th/)).not.toBeInTheDocument();
+  });
+
   it('finds clauses from anywhere with the command palette', async () => {
     const { user } = await renderApp();
     await openRentalExample(user);

@@ -20,7 +20,7 @@ export const NOTICE_EN: SampleWords = {
       title: 'Pay within 15 days',
       simple: 'You are asked to pay Rs. 1,20,000 within 15 days from the day you got this notice.',
       detailed:
-        'The notice formally demands Rs. 1,20,000. The 15 days start from the day you received the notice, not from the date written on it.',
+        'The notice demands Rs. 1,20,000, and the 15 days run from the day you received it, not from the date printed on it. Paying inside that window is what stops a case under Section 138.',
       rules: ['Pay Rs. 1,20,000 within 15 days of receiving the notice'],
       conditions: [],
       consequences: ['If not paid, the sender says court cases will follow'],
@@ -37,7 +37,7 @@ export const NOTICE_EN: SampleWords = {
       simple:
         'If you do not pay in 15 days, the sender says they will file a criminal case and a case to get the money back.',
       detailed:
-        'The notice warns of two cases: a criminal case for the bounced cheque under Section 138, and a civil case to recover the money with interest and legal costs.',
+        'If nothing is paid within 15 days, the sender says they will file two cases: a criminal complaint for the bounced cheque under Section 138, and a civil suit to recover the money with interest and legal costs. A conviction under Section 138 can mean a fine of up to twice the cheque amount, imprisonment up to two years, or both.',
       rules: ['Start a criminal case and a civil case if not paid in 15 days'],
       conditions: ['Only if the money is not paid within 15 days'],
       consequences: [
@@ -61,7 +61,7 @@ export const NOTICE_EN: SampleWords = {
       simple:
         'Your cheque was returned by the bank on 1 September 2026 because the account did not have enough money.',
       detailed:
-        'The shop deposited your cheque. The bank refused to pay it on 1 September 2026 with the reason "Funds Insufficient", meaning low balance.',
+        "The bank returned the cheque unpaid on 1 September 2026 with the reason 'Funds Insufficient', meaning the account balance was too low. The date on that return memo starts the legal clock, so it is worth checking.",
       rules: [],
       conditions: [],
       consequences: [],
@@ -78,7 +78,7 @@ export const NOTICE_EN: SampleWords = {
       simple:
         'The notice says you bought goods worth Rs. 1,20,000 from Lakshmi Traders on 15 July 2026.',
       detailed:
-        'According to the sender, the debt comes from goods you bought on 15 July 2026. Check your own bills and records to see if this is correct.',
+        'The sender says the money is for goods bought on 15 July 2026. Check your own bills, delivery notes and payment records for that date before replying, because the amount claimed must match what is actually owed.',
       rules: [],
       conditions: [],
       consequences: [],
@@ -94,7 +94,7 @@ export const NOTICE_EN: SampleWords = {
       simple:
         'The cheque is number 004512, dated 20 August 2026, for Rs. 1,20,000, from State Bank of India, Ameerpet.',
       detailed:
-        'Match these details with your cheque book: cheque number 004512, dated 20 August 2026, amount Rs. 1,20,000, from the State Bank of India Ameerpet branch.',
+        'The cheque details given are: number 004512, dated 20 August 2026, for Rs. 1,20,000, drawn on State Bank of India, Ameerpet. Compare each detail with your cheque book, because a wrong detail weakens the claim.',
       rules: [],
       conditions: [],
       consequences: [],
@@ -106,7 +106,7 @@ export const NOTICE_EN: SampleWords = {
       simple:
         'The notice says giving a cheque without enough money in the account is a crime under Section 138.',
       detailed:
-        'The sender relies on Section 138 of the Negotiable Instruments Act, 1881. Whether it applies depends on facts that a lawyer should check.',
+        'The sender relies on Section 138 of the Negotiable Instruments Act, 1881, which treats a cheque bounced for insufficient funds as an offence when the legal steps are followed in time. Whether it applies here depends on dates and proof that a lawyer should check.',
       rules: [],
       conditions: [],
       consequences: [],
@@ -123,7 +123,7 @@ export const NOTICE_EN: SampleWords = {
       title: 'Who sent the notice',
       simple: 'A lawyer, R. Meenakshi, sent this notice for the shop Lakshmi Traders.',
       detailed:
-        'The notice comes from Advocate R. Meenakshi, acting for her client Lakshmi Traders.',
+        'The notice is signed by Advocate R. Meenakshi for her client Lakshmi Traders, so any reply goes to the address printed on it. Keep the envelope and the postal receipt, because the date you received it decides your 15 days.',
       rules: [],
       conditions: [],
       consequences: [],

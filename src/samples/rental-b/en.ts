@@ -12,7 +12,7 @@ export const RENTAL_B_EN: SampleWords = {
       simple:
         'Pay Rs. 25,000 rent by the 10th of every month. Late rent adds interest at 18% a year.',
       detailed:
-        'The tenant must pay Rs. 25,000 on or before the 10th of each month. If rent is late, the landlord can charge interest of 18% per year on the late amount.',
+        'Rent is Rs. 25,000, due on or before the 10th of every month. Late rent carries interest at 18% per year on the unpaid amount until it is cleared. There is no fixed daily penalty and no grace period.',
       rules: ['Pay Rs. 25,000 rent on or before the 10th of every month'],
       conditions: [],
       consequences: ['Interest at 18% a year on late rent'],
@@ -28,7 +28,7 @@ export const RENTAL_B_EN: SampleWords = {
       simple:
         'Your Rs. 1,50,000 deposit comes back within 15 days after you hand over the empty flat, minus dues and damage.',
       detailed:
-        'The landlord must refund the deposit within 15 days of the tenant handing over the empty flat. Unpaid dues and the cost of any damage can be cut first. No interest is paid.',
+        'The Rs. 1,50,000 deposit must come back within 15 days of you handing over the empty flat. Unpaid dues and the cost of damage are deducted first, and so is the painting charge in Clause 3. No interest is paid on the deposit.',
       rules: [
         'Refund the deposit within 15 days of getting the empty flat back',
         'Cut unpaid dues and the cost of damage from the deposit',
@@ -47,7 +47,7 @@ export const RENTAL_B_EN: SampleWords = {
       simple:
         "When you leave, one month's rent (Rs. 25,000) is cut from your deposit for painting, even if the walls are fine.",
       detailed:
-        "On vacating, the landlord cuts one month's rent from the deposit for painting. This happens no matter what condition the flat is in.",
+        "One month's rent, Rs. 25,000, is cut from the deposit for painting when you leave, whatever the condition of the walls. Even a spotless flat loses this amount, so the most you can get back is Rs. 1,25,000 before any other deduction.",
       rules: ["Cut one month's rent from the deposit for painting"],
       conditions: ['Applies even if the flat is in good condition'],
       consequences: ['You get Rs. 25,000 less of your deposit back'],
@@ -64,7 +64,7 @@ export const RENTAL_B_EN: SampleWords = {
       simple:
         "You or the landlord can end the agreement at any time by giving one month's notice in writing. There is no lock-in.",
       detailed:
-        'Either side can end the agreement whenever they want, as long as they give the other side one month of written notice.',
+        "Either side may end the agreement at any time with one month's written notice, and there is no lock-in at all. Leaving before the notice period ends means paying rent for the remaining days.",
       rules: [
         "End the agreement with 1 month's written notice",
         "End the agreement with 1 month's written notice",
@@ -82,7 +82,7 @@ export const RENTAL_B_EN: SampleWords = {
       title: 'Rent increase when renewing',
       simple: 'If you renew, the rent goes up by 10%, to Rs. 27,500.',
       detailed:
-        'At renewal, the rent is increased by 10% of the last rent. From Rs. 25,000, the new rent will be Rs. 27,500.',
+        'On renewal the rent rises by a fixed 10% of the last rent, taking Rs. 25,000 to Rs. 27,500 a month, about Rs. 30,000 more over a year. The paper writes this as automatic, not as a maximum.',
       rules: ['Increase the rent by 10% at renewal'],
       conditions: ['Only at renewal'],
       consequences: [],
@@ -97,7 +97,7 @@ export const RENTAL_B_EN: SampleWords = {
       title: 'How long the agreement lasts',
       simple: 'The agreement is for 11 months: from 1 September 2026 to 31 July 2027.',
       detailed:
-        'The rental period is 11 months, starting 1 September 2026 and ending 31 July 2027.',
+        'The agreement runs 11 months, from 1 September 2026 to 31 July 2027, and then ends by itself. Staying on needs a renewal or a fresh agreement.',
       rules: [],
       conditions: [],
       consequences: [],
@@ -113,7 +113,7 @@ export const RENTAL_B_EN: SampleWords = {
       simple:
         'Society maintenance is already inside the Rs. 25,000 rent. You pay electricity separately.',
       detailed:
-        'The monthly rent covers society maintenance charges. The tenant pays only electricity, as per the meter.',
+        'The Rs. 25,000 rent already covers society maintenance, so there is no separate monthly maintenance to pay. Electricity is paid separately as per the meter reading.',
       rules: ['Pay electricity as per the meter reading'],
       conditions: [],
       consequences: [],
@@ -129,7 +129,7 @@ export const RENTAL_B_EN: SampleWords = {
       simple:
         'You pay for small repairs up to Rs. 2,000 each. The landlord pays for bigger repairs.',
       detailed:
-        'The tenant bears the cost of each minor repair up to Rs. 2,000. Any repair costing more than that is paid by the landlord.',
+        "You pay for each minor repair up to Rs. 2,000, such as taps, switches or small fittings. Anything above Rs. 2,000 is the landlord's responsibility, so keep the bills as proof for bigger work.",
       rules: [
         'Pay for each minor repair up to Rs. 2,000',
         'Pay for repairs costing more than Rs. 2,000',
@@ -147,7 +147,7 @@ export const RENTAL_B_EN: SampleWords = {
       title: 'Renting the flat to someone else',
       simple: 'Do not rent the flat to others without written permission from the landlord first.',
       detailed:
-        'The tenant cannot sublet the flat or any part of it unless the landlord agrees in writing beforehand.',
+        'You cannot sublet the flat or any part of it unless the landlord agrees in writing beforehand. Letting a friend or relative stay long term can count as subletting, so ask for written permission first.',
       rules: ['Sublet the flat without written permission'],
       conditions: ['Unless the landlord agrees in writing first'],
       consequences: [],
@@ -161,7 +161,8 @@ export const RENTAL_B_EN: SampleWords = {
     p10: {
       title: 'Landlord visits',
       simple: 'The landlord can check the flat, but must tell you at least 48 hours before.',
-      detailed: 'The landlord may inspect the flat after giving at least 48 hours of notice.',
+      detailed:
+        'The landlord may inspect the flat but must give at least 48 hours of notice before coming. Entry without that notice is not allowed by this clause.',
       rules: ["Inspect the flat with 48 hours' notice"],
       conditions: ["At least 48 hours' notice first"],
       consequences: [],
@@ -171,7 +172,8 @@ export const RENTAL_B_EN: SampleWords = {
     p11: {
       title: 'Which court handles disputes',
       simple: 'Any legal fight about this agreement goes to courts in Bengaluru.',
-      detailed: 'Disputes under this agreement are heard by the courts in Bengaluru.',
+      detailed:
+        'Any legal dispute under this agreement goes only to the courts in Bengaluru. A case cannot be filed in the courts of another city.',
       rules: [],
       conditions: [],
       consequences: [],

@@ -89,7 +89,7 @@ export const hi: Messages = {
   sampleNoticeHint: '15 दिन में पैसे चुकाने की माँग',
   libraryTitle: 'इस सत्र में आपके कागज़',
   libraryEmpty:
-    'आप जो कागज़ खोलेंगे वे यहाँ दिखेंगे। वे सिर्फ़ इस ब्राउज़र टैब में रहते हैं और कभी सेव नहीं होते।',
+    'आप जो कागज़ खोलेंगे वे यहाँ दिखेंगे। वे इसी ब्राउज़र टैब में रहते हैं, रीलोड करने पर भी बने रहते हैं, और टैब बंद करते ही हट जाते हैं।',
   libraryOpen: 'खोलें',
   libraryRemove: '{name} हटाएँ',
   libraryCompare: 'दो कागज़ों की तुलना करें',
@@ -426,4 +426,5 @@ export const hi: Messages = {
   legalUpdated: 'आख़िरी बदलाव: {date}',
   legalBack: 'होम पर वापस',
   legalContents: 'इस पेज पर',
+  explainAgainHint: 'इसे बदलने पर कागज़ नई भाषा में दोबारा समझाया जाएगा।',
 };

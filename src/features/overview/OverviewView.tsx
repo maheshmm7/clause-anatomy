@@ -1,4 +1,8 @@
-import { LANGUAGE_INFO } from '../../../shared/languages';
+import {
+  EXPLANATION_LANGUAGES,
+  LANGUAGE_INFO,
+  type ExplanationLanguage,
+} from '../../../shared/languages';
 import type { AnalysisResult } from '../../../shared/schema';
 import { useActiveDoc } from '../../app/WorkspaceContext';
 import {
@@ -8,6 +12,7 @@ import {
   useCountdown,
 } from '../../components/controls';
 import { Icon, type IconName } from '../../components/Icon';
+import { Select } from '../../components/Select';
 import { Badge, LegalHelpPanel, Notice, Panel, SpeakButton, ViewHeader } from '../../components/ui';
 import { useFocusOnMount } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -34,7 +39,7 @@ function todayIso(): string {
 /** 01 — the paper at a glance: KPIs, role, balance, risks, dates and next moves. */
 export function OverviewView() {
   const { t, formatDate, language: uiLanguage } = useI18n();
-  const { doc, dispatch, go } = useActiveDoc();
+  const { doc, dispatch, go, explainAgain } = useActiveDoc();
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
   const countdown = useCountdown();
   const { loaded, perspective, checks } = doc;
@@ -166,7 +171,12 @@ export function OverviewView() {
           </ul>
 
           <div className="dash-grid">
-            <Panel number="A" title={t('perspectiveQuestion')} icon="user" className="panel--wide">
+            <Panel
+              number="01A"
+              title={t('perspectiveQuestion')}
+              icon="user"
+              className="panel--wide"
+            >
               <div className="stack-row">
                 <RolePicker
                   hideLegend
@@ -176,13 +186,28 @@ export function OverviewView() {
                 />
                 <ReadingLevelSwitch />
               </div>
+              <div className="paper-language">
+                <Select<ExplanationLanguage>
+                  label={t('explanationLanguageLabel')}
+                  labelIcon="globe"
+                  value={language}
+                  options={EXPLANATION_LANGUAGES.map((option) => ({
+                    value: option,
+                    label: LANGUAGE_INFO[option].nativeName,
+                    hint: option === 'en' ? undefined : LANGUAGE_INFO[option].englishName,
+                    lang: option,
+                  }))}
+                  onChange={explainAgain}
+                />
+                <p className="hint">{t('explainAgainHint')}</p>
+              </div>
             </Panel>
 
-            <Panel number="B" title={t('fairnessTitle')} icon="scale">
+            <Panel number="01B" title={t('fairnessTitle')} icon="scale">
               <FairnessBar analysis={analysis} perspective={perspective} />
             </Panel>
 
-            <Panel number="C" title={t('topRisksTitle')} icon="alert" className="panel--danger">
+            <Panel number="01C" title={t('topRisksTitle')} icon="alert" className="panel--danger">
               {attentionPoints.length === 0 ? (
                 <p className="empty">{t('topRisksEmpty')}</p>
               ) : (
@@ -206,7 +231,7 @@ export function OverviewView() {
               )}
             </Panel>
 
-            <Panel number="D" title={t('datesTitle')} icon="calendar">
+            <Panel number="01D" title={t('datesTitle')} icon="calendar">
               {analysis.keyDates.length === 0 ? (
                 <p className="empty">{t('noDates')}</p>
               ) : (
@@ -231,7 +256,7 @@ export function OverviewView() {
             </Panel>
 
             {analysis.notice && (
-              <Panel number="E" title={t('noticeDemand')} icon="alert" className="panel--wide">
+              <Panel number="01E" title={t('noticeDemand')} icon="alert" className="panel--wide">
                 <dl className="facts" lang={language}>
                   {NOTICE_FIELDS.filter(([field]) => analysis.notice?.[field]).map(
                     ([field, key, icon]) => (
@@ -247,7 +272,7 @@ export function OverviewView() {
               </Panel>
             )}
 
-            <Panel number="F" title={t('partiesTitle')} icon="user">
+            <Panel number="01F" title={t('partiesTitle')} icon="user">
               <ul className="parties">
                 {analysis.parties.map((party) => (
                   <li key={party.id} className="parties__item">
@@ -260,7 +285,7 @@ export function OverviewView() {
               </ul>
             </Panel>
 
-            <Panel number="G" title={t('quickActionsTitle')} icon="arrowRight">
+            <Panel number="01G" title={t('quickActionsTitle')} icon="arrowRight">
               <ul className="action-list">
                 <li>
                   <button type="button" className="btn btn--primary" onClick={() => go('clauses')}>
@@ -285,7 +310,7 @@ export function OverviewView() {
               </ul>
             </Panel>
 
-            {(urgent || analysis.category === 'court') && <LegalHelpPanel number="H" />}
+            {(urgent || analysis.category === 'court') && <LegalHelpPanel number="01H" />}
           </div>
         </>
       )}

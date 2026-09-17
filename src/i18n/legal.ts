@@ -50,7 +50,7 @@ const en: LegalContent = {
       {
         heading: 'What we keep',
         body: [
-          'Nothing. There are no accounts, no database, no cookies and no analytics. Papers, notes and answers live only in the open browser tab and disappear when you close or reload it.',
+          'Nothing on our side. There are no accounts, no database, no cookies and no analytics. Papers, notes and answers stay inside this browser tab (so a refresh does not lose them) and the browser clears them when you close the tab.',
           'While the tab is open, it remembers explanations so the same paper is not sent twice. The server keeps no documents and never writes them to logs.',
           'Your settings (language, theme, text size, reading level) are saved in your browser’s local storage. Clearing site data removes them.',
         ],
@@ -194,7 +194,7 @@ const hi: LegalContent = {
       {
         heading: 'हम क्या रखते हैं',
         body: [
-          'कुछ नहीं। न अकाउंट, न डेटाबेस, न कुकी, न एनालिटिक्स। कागज़, नोट्स और जवाब सिर्फ़ खुले ब्राउज़र टैब में रहते हैं और टैब बंद करने या रीलोड करने पर मिट जाते हैं।',
+          'हमारी तरफ़ कुछ नहीं। न अकाउंट, न डेटाबेस, न कुकी, न एनालिटिक्स। कागज़, नोट्स और जवाब इसी ब्राउज़र टैब में रहते हैं (रीलोड करने पर भी नहीं मिटते) और टैब बंद करते ही ब्राउज़र उन्हें हटा देता है।',
           'टैब खुला रहने तक यह समझ याद रखता है ताकि वही कागज़ दोबारा न भेजना पड़े। सर्वर कोई दस्तावेज़ नहीं रखता और लॉग में कभी नहीं लिखता।',
           'आपकी सेटिंग्स (भाषा, थीम, अक्षरों का आकार, पढ़ने का स्तर) आपके ब्राउज़र के लोकल स्टोरेज में रहती हैं। साइट डेटा मिटाने पर ये हट जाती हैं।',
         ],
@@ -338,7 +338,7 @@ const te: LegalContent = {
       {
         heading: 'మేము ఏమి ఉంచుకుంటాం',
         body: [
-          'ఏమీ లేదు. ఖాతాలు, డేటాబేస్, కుకీలు, అనలిటిక్స్ లేవు. కాగితాలు, నోట్స్, జవాబులు తెరిచిన బ్రౌజర్ ట్యాబ్‌లోనే ఉంటాయి; ట్యాబ్ మూసినా, రీలోడ్ చేసినా పోతాయి.',
+          'మా వైపు ఏమీ లేదు. ఖాతాలు, డేటాబేస్, కుకీలు, అనలిటిక్స్ లేవు. కాగితాలు, నోట్స్, జవాబులు ఈ బ్రౌజర్ ట్యాబ్‌లోనే ఉంటాయి (రీలోడ్ చేసినా పోవు); ట్యాబ్ మూసినప్పుడు బ్రౌజర్ వాటిని తొలగిస్తుంది.',
           'ట్యాబ్ తెరిచి ఉన్నంత వరకు వివరణలను గుర్తుంచుకుంటుంది, అదే కాగితం మళ్ళీ పంపకుండా. సర్వర్ ఏ పత్రాలనూ ఉంచదు, లాగ్‌లలో ఎప్పుడూ రాయదు.',
           'మీ సెట్టింగ్‌లు (భాష, థీమ్, అక్షర పరిమాణం, చదివే స్థాయి) మీ బ్రౌజర్ లోకల్ స్టోరేజ్‌లో ఉంటాయి. సైట్ డేటా తొలగిస్తే అవి పోతాయి.',
         ],

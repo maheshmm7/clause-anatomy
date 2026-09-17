@@ -9,6 +9,7 @@ import {
   useState,
   type MouseEvent,
 } from 'react';
+import type { ExplanationLanguage } from '../../shared/languages';
 import { ApiClientError, api } from '../api/client';
 import { Spinner } from '../components/ui';
 import { LandingPage } from '../features/site/LandingPage';
@@ -20,6 +21,7 @@ import type { MessageKey } from '../i18n/messages/en';
 import { useSettings } from '../settings/SettingsProvider';
 import type { LoadedDocument } from './flow';
 import { parseRoute, readRouteDocId, VIEW_META, writeRoute, type Route } from './navigation';
+import { readSession, writeSession } from './session';
 import { useDocumentFlow } from './useDocumentFlow';
 import { WorkspaceLayout } from './WorkspaceLayout';
 import { WorkspaceContext, type WorkspaceApi } from './WorkspaceContext';
@@ -89,14 +91,16 @@ function SkipLink() {
 const pageOf = (route: Route): Page => (route.page === 'app' ? { page: 'app' } : route);
 
 function initialState(route: Route): WorkspaceState {
+  // Papers opened before a refresh are still in this tab's session storage.
+  const restored = readSession() ?? initialWorkspace;
   return route.page === 'app'
-    ? workspaceReducer(initialWorkspace, { type: 'navigate', view: route.view })
-    : initialWorkspace;
+    ? workspaceReducer(restored, { type: 'navigate', view: route.view })
+    : restored;
 }
 
 function Shell() {
   const { t } = useI18n();
-  const { explanationLanguage } = useSettings();
+  const { explanationLanguage, setExplanationLanguage } = useSettings();
   const [initialRoute] = useState(() => parseRoute(window.location.hash));
   const [page, setPage] = useState<Page>(() => pageOf(initialRoute));
   const [state, dispatch] = useReducer(workspaceReducer, initialRoute, initialState);
@@ -105,6 +109,12 @@ function Shell() {
   const doc = activeDoc(state);
   const activeId = state.activeId;
 
+  // Keep this tab's papers through a refresh (never sent anywhere; cleared with the tab).
+  useEffect(() => {
+    const timer = window.setTimeout(() => writeSession(state), 300);
+    return () => window.clearTimeout(timer);
+  }, [state]);
+
   const onLoaded = useCallback((loaded: LoadedDocument) => {
     const id = `paper-${crypto.randomUUID()}`;
     dispatch({ type: 'addDocument', id, loaded });
@@ -112,10 +122,15 @@ function Shell() {
     writeRoute({ page: 'app', view: 'overview' }, id);
   }, []);
 
+  const onReplaced = useCallback((docId: string, loaded: LoadedDocument) => {
+    dispatch({ type: 'replaceAnalysis', id: docId, loaded });
+  }, []);
+
   const flow = useDocumentFlow({
     explanationLanguage,
     aiAvailable: aiAvailable === true,
     onLoaded,
+    onReplaced,
   });
 
   const go = useCallback(
@@ -203,6 +218,15 @@ function Shell() {
     }
   }, [page, state.view, doc, t]);
 
+  const explainAgain = useCallback(
+    (language: ExplanationLanguage) => {
+      if (!doc || doc.loaded.analysis.language === language) return;
+      setExplanationLanguage(language);
+      void flow.explainAgain(doc.id, doc.loaded, language);
+    },
+    [doc, flow, setExplanationLanguage],
+  );
+
   const api_: WorkspaceApi = useMemo(
     () => ({
       state,
@@ -211,10 +235,11 @@ function Shell() {
       dispatch,
       go,
       ask,
+      explainAgain,
       askDraft,
       setAskDraft,
     }),
-    [state, doc, aiAvailable, go, ask, askDraft],
+    [state, doc, aiAvailable, go, ask, explainAgain, askDraft],
   );
 
   if (page.page === 'landing') {

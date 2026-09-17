@@ -63,10 +63,12 @@ export const pointSchema = z.object({
     ),
   simple: z
     .string()
+    .describe('ONE short sentence (max 20 words) with only the most important thing.'),
+  detailed: z
+    .string()
     .describe(
-      'The easiest possible explanation: 1-2 very short sentences a 12-year-old understands.',
+      '2-4 sentences that ADD what "simple" leaves out: exact amounts, dates, deadlines, conditions, exceptions and what happens if the rule is broken. Never repeats "simple".',
     ),
-  detailed: z.string().describe('A fuller plain-language explanation in 2-4 sentences.'),
   importance: z.enum(['high', 'medium', 'low']),
   favours: z.string().describe('Party id this point mainly benefits, or "both", or "neutral".'),
   rules: z.array(ruleSchema).max(6),

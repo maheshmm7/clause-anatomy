@@ -25,6 +25,8 @@ export interface PendingUpload {
 }
 
 export interface LoadedDocument {
+  /** Set for built-in examples, so they can be re-explained without an AI call. */
+  sampleId?: string;
   /** Redacted text: the only version of the document the app keeps in memory. */
   text: string;
   analysis: AnalysisResult;

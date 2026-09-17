@@ -3,7 +3,7 @@ import type { VerifiedPoint } from '../../../shared/schema';
 import { normalizeForMatch } from '../../../shared/text';
 import { locateQuote, prepareSource } from '../../../shared/verifyQuote';
 import { useActiveDoc } from '../../app/WorkspaceContext';
-import { Segmented } from '../../components/controls';
+import { ReadingLevelSwitch, Segmented } from '../../components/controls';
 import { Icon } from '../../components/Icon';
 import { Select } from '../../components/Select';
 import { Panel, ViewHeader } from '../../components/ui';
@@ -104,6 +104,7 @@ export function ClausesView() {
         kicker={t('navClauses')}
         title={t('clausesTitle')}
         headingRef={headingRef}
+        actions={<ReadingLevelSwitch />}
       >
         <p className="hint">
           <kbd className="kbd">J</kbd> <kbd className="kbd">K</kbd> {t('keyboardHint')}

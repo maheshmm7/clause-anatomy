@@ -94,7 +94,7 @@ export const en = {
   sampleNoticeHint: 'A demand to pay money within 15 days',
   libraryTitle: 'Your papers in this session',
   libraryEmpty:
-    'Papers you open appear here. They stay only in this browser tab and are never stored.',
+    'Papers you open appear here. They stay in this browser tab, survive a refresh, and are cleared when you close the tab.',
   libraryOpen: 'Open',
   libraryRemove: 'Remove {name}',
   libraryCompare: 'Compare two papers',
@@ -447,6 +447,7 @@ export const en = {
   legalUpdated: 'Last updated: {date}',
   legalBack: 'Back to home',
   legalContents: 'On this page',
+  explainAgainHint: 'Changing this explains the paper again in the new language.',
 } as const;
 
 export type MessageKey = keyof typeof en;

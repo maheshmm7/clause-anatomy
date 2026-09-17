@@ -69,6 +69,7 @@ export type WorkspaceAction =
   | { type: 'addDocument'; id: string; loaded: LoadedDocument }
   | { type: 'removeDocument'; id: string }
   | { type: 'openDocument'; id: string; view?: View }
+  | { type: 'replaceAnalysis'; id: string; loaded: LoadedDocument }
   | { type: 'navigate'; view: View; docId?: string | null }
   | { type: 'setPerspective'; perspective: Perspective }
   | { type: 'recordCheck'; pointId: string; outcome: CheckOutcome }
@@ -158,6 +159,17 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         view: removedActive || (state.view === 'compare' && docs.length < 2) ? 'home' : state.view,
         compareIds: normaliseCompare(docs, state.compareIds),
       };
+    }
+    case 'replaceAnalysis': {
+      // The reader's own work (role, checks, notes, flags, questions) is kept.
+      const points = action.loaded.analysis.points;
+      return updateDoc(state, action.id, (doc) => ({
+        ...doc,
+        loaded: action.loaded,
+        selectedPointId: points.some((point) => point.id === doc.selectedPointId)
+          ? doc.selectedPointId
+          : (points[0]?.id ?? null),
+      }));
     }
     case 'openDocument':
       if (!state.docs.some((doc) => doc.id === action.id)) return state;

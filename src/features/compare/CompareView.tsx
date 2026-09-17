@@ -103,7 +103,7 @@ export function CompareView() {
 
           {comparison && (
             <>
-              <Panel number="A" title={t('compareFactsTitle')} icon="grid">
+              <Panel number="09A" title={t('compareFactsTitle')} icon="grid">
                 <ScrollArea label={t('compareTitle')}>
                   <table className="compare-table">
                     <thead>
@@ -160,7 +160,7 @@ export function CompareView() {
                 </ScrollArea>
               </Panel>
 
-              <Panel number="B" title={t('compareMatched')} icon="columns">
+              <Panel number="09B" title={t('compareMatched')} icon="columns">
                 <ul className="pairs">
                   {comparison.matches.pairs.map((pair) => (
                     <li key={`${pair.a.id}-${pair.b.id}`} className="pair">
@@ -189,7 +189,7 @@ export function CompareView() {
                 ).map(([analysis, only], index) => (
                   <Panel
                     key={index}
-                    number={index === 0 ? 'C' : 'D'}
+                    number={index === 0 ? '09C' : '09D'}
                     title={t('compareOnlyIn', { name: analysis.documentType })}
                     icon="document"
                   >

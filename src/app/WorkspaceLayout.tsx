@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Dialog } from '../components/Dialog';
 import { Icon } from '../components/Icon';
-import { Spinner } from '../components/ui';
+import { Notice, Spinner } from '../components/ui';
 import { BottomNav } from '../features/shell/BottomNav';
 import { Sidebar } from '../features/shell/Sidebar';
 import { Topbar } from '../features/shell/Topbar';
@@ -170,6 +170,13 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
             onNavigate={(view) => go(view)}
           />
           <main id="main" className={`workspace workspace--${state.view}`} tabIndex={-1}>
+            {flow.state.stage === 'idle' && flow.state.error && state.view !== 'home' && (
+              <Notice
+                tone="danger"
+                urgent
+                title={t(flow.state.error.key, flow.state.error.values)}
+              />
+            )}
             <Suspense fallback={<Spinner />}>
               {flow.state.stage === 'working' ? (
                 <WorkingScreen step={flow.state.step} onCancel={flow.cancel} />

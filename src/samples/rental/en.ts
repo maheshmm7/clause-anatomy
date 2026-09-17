@@ -11,7 +11,7 @@ export const RENTAL_EN: SampleWords = {
       title: 'Monthly rent and late fee',
       simple: 'Pay Rs. 22,000 rent by the 5th of every month. Each day late costs Rs. 200 more.',
       detailed:
-        'The tenant must pay Rs. 22,000 on or before the 5th of each month. If payment is late, the landlord can charge Rs. 200 for every day after the 5th.',
+        'Rent is Rs. 22,000 and is due on or before the 5th of every month. From the 6th, Rs. 200 is added for each late day, so paying on the 10th costs Rs. 1,000 extra. The paper gives no grace period and sets no upper limit on the late fee.',
       rules: ['Pay Rs. 22,000 rent on or before the 5th of every month'],
       conditions: [],
       consequences: ['A late fee of Rs. 200 for each day after the 5th'],
@@ -29,7 +29,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         'Nobody can end the agreement in the first 6 months. If you leave early, you still pay rent for those months.',
       detailed:
-        'The first 6 months are a "lock-in period". Neither the tenant nor the landlord can end the agreement then. If the tenant moves out during these months, the tenant must still pay rent for the rest of the 6 months.',
+        'The first 6 months are a lock-in, so neither side can end the agreement before 1 February 2027. If you move out earlier, you still owe rent for every remaining month of that period, up to about Rs. 1,32,000. No exception is listed for a job transfer or any other reason.',
       rules: [
         'End the agreement during the first 6 months',
         'End the agreement during the first 6 months',
@@ -50,7 +50,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         'Your Rs. 66,000 deposit comes back within 30 days after you move out. Unpaid rent, bills or real damage can be cut from it.',
       detailed:
-        'The landlord must return the security deposit within 30 days of the tenant moving out. The landlord may first cut unpaid rent, unpaid electricity or water bills, and the cost of repairing damage that is more than normal use. No interest is paid on the deposit.',
+        'The deposit is Rs. 66,000 and must come back within 30 days of you moving out. The landlord may first deduct unpaid rent, unpaid electricity or water bills, and repairs for damage beyond normal wear and tear. No interest is paid on the money, and the paper does not say what proof of the deductions you get.',
       rules: [
         'Return the deposit within 30 days after the tenant moves out',
         'Cut unpaid rent, unpaid bills and repair costs for real damage from the deposit',
@@ -74,7 +74,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         'Do not let someone else live in or rent the flat without the landlord agreeing in writing first. If you do, you lose your whole deposit.',
       detailed:
-        'The tenant cannot sublet, hand over, or share possession of the flat unless the landlord has given written permission beforehand. This rule applies even if Clause 9 seems to say something else. Breaking it means the Rs. 66,000 deposit is lost.',
+        'You cannot sublet the flat, hand it over or share it with anyone unless the landlord agrees in writing first. This clause overrides Clause 9, so nothing there softens it. Breaking it costs the whole Rs. 66,000 deposit, on top of the agreement being ended.',
       rules: ['Sublet or hand over the flat (or part of it) to someone else'],
       conditions: ['Unless the landlord agrees in writing, before it happens'],
       consequences: ['The whole security deposit is lost'],
@@ -96,7 +96,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         "After the first 6 months, you or the landlord can end the agreement by giving 2 months' notice in writing.",
       detailed:
-        'Once the lock-in period is over, either side can end the agreement. They must tell the other side in writing, 2 months before.',
+        "Once the 6-month lock-in is over, either side can end the agreement by giving 2 months' notice in writing. Telling the landlord by phone or in person is not enough. Leaving with shorter notice lets the landlord treat the missing days as unpaid rent.",
       rules: [
         "End the agreement after 6 months with 2 months' written notice",
         "End the agreement after 6 months with 2 months' written notice",
@@ -117,7 +117,7 @@ export const RENTAL_EN: SampleWords = {
       title: 'How long the agreement lasts',
       simple: 'The agreement is for 11 months: from 1 August 2026 to 30 June 2027.',
       detailed:
-        'The rental period is 11 months. It starts on 1 August 2026 and ends on 30 June 2027. To stay longer, the agreement has to be renewed.',
+        'The tenancy runs 11 months, from 1 August 2026 to 30 June 2027, and ends on that date by itself. Staying on needs a renewal; nothing in the paper renews it automatically.',
       rules: [],
       conditions: [],
       consequences: [],
@@ -132,7 +132,7 @@ export const RENTAL_EN: SampleWords = {
       title: 'Rent increase when renewing',
       simple: 'If you renew, the rent can go up by at most 5%. That is at most Rs. 23,100.',
       detailed:
-        'When the agreement is renewed, the landlord may raise the rent, but only by up to 5% of the last rent paid. From Rs. 22,000, the highest new rent is Rs. 23,100.',
+        'On renewal the landlord may raise the rent by up to 5% of the last rent paid, so Rs. 22,000 becomes at most Rs. 23,100 a month. That is a ceiling, not an automatic increase, so it can be discussed before signing the renewal.',
       rules: ['Increase the rent by up to 5% when the agreement is renewed'],
       conditions: ['Only at renewal', 'Not more than 5% of the last rent'],
       consequences: [],
@@ -148,7 +148,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         'You pay electricity, water and Rs. 2,500 maintenance every month, on top of rent. The landlord pays for big building repairs.',
       detailed:
-        "The tenant pays electricity and water for what is used, plus society maintenance of Rs. 2,500 a month. These are extra to the rent. Major structural repairs are the landlord's job.",
+        'Electricity and water are paid as per actual use, plus a fixed society maintenance of Rs. 2,500 every month, all on top of the Rs. 22,000 rent. Your real monthly cost is therefore at least Rs. 24,500. Major structural repairs of the building stay with the landlord.',
       rules: [
         'Pay electricity, water and Rs. 2,500 monthly maintenance',
         'Pay for major structural repairs',
@@ -167,7 +167,7 @@ export const RENTAL_EN: SampleWords = {
       title: 'Paying for damage',
       simple: 'If you or your guests carelessly damage the flat, you must pay for it.',
       detailed:
-        "The tenant must cover the landlord's loss if the flat is damaged because of carelessness by the tenant or the tenant's guests.",
+        'You pay for damage caused by carelessness by you or your guests, beyond normal wear and tear. The paper fixes no limit and does not say who decides the repair cost, so dated photos when you move in and when you leave protect you.',
       rules: ['Pay for loss or damage caused by carelessness of the tenant or guests'],
       conditions: ['Only for damage caused by carelessness'],
       consequences: ['The tenant pays for the loss'],
@@ -183,7 +183,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         'The landlord can check the flat, but must tell you at least 24 hours before and come at a reasonable time.',
       detailed:
-        "The landlord may inspect the flat at reasonable hours. The landlord must give at least 24 hours' notice before visiting.",
+        'The landlord may inspect the flat only at reasonable hours and must tell you at least 24 hours before. Surprise visits are not allowed by this clause, but it does not say how that notice has to be given.',
       rules: ["Inspect the flat with 24 hours' notice, at reasonable hours"],
       conditions: ["At least 24 hours' notice first", 'Only at reasonable hours'],
       consequences: [],
@@ -200,7 +200,7 @@ export const RENTAL_EN: SampleWords = {
       simple:
         'If there is a legal fight about this agreement, only courts in Hyderabad can hear it.',
       detailed:
-        'Any dispute about this agreement must go to the courts in Hyderabad, and no other city.',
+        'Any dispute about this agreement can be heard only by the courts in Hyderabad, even if you move to another city later. Travelling there for hearings would be at your own cost.',
       rules: [],
       conditions: [],
       consequences: [],

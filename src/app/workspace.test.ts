@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { RENTAL_B_SAMPLE } from '../samples/rental-b';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { flowReducer, initialFlowState, type LoadedDocument, type PendingUpload } from './flow';
 import { parseRoute, readRouteDocId, routeToHash, type Route } from './navigation';
+import { readSession, writeSession } from './session';
 import {
   activeDoc,
   initialWorkspace,
@@ -137,6 +138,42 @@ describe('workspace reducer', () => {
     expect(activeDoc(state)?.asks).toEqual([]);
   });
 
+  it('replaces a paper’s analysis (new language) but keeps the reader’s own work', () => {
+    const state = run(
+      [
+        { type: 'setPerspective', perspective: 'lessee' },
+        { type: 'setNote', pointId: 'p1', note: 'ask about this' },
+        { type: 'toggleFlag', pointId: 'p1' },
+        { type: 'recordCheck', pointId: 'p1', outcome: 'correct' },
+        { type: 'selectPoint', pointId: 'p11' },
+      ],
+      withTwoPapers(),
+    );
+    const hindi = loaded(RENTAL_SAMPLE.analyses.hi!);
+    const after = workspaceReducer(state, { type: 'replaceAnalysis', id: 'b', loaded: hindi });
+    const doc = activeDoc(after);
+
+    expect(doc?.loaded.analysis.language).toBe('hi');
+    expect(doc).toMatchObject({
+      perspective: 'lessee',
+      notes: { p1: 'ask about this' },
+      flags: { p1: true },
+      checks: { p1: 'correct' },
+      selectedPointId: 'p11',
+    });
+    expect(after.docs).toHaveLength(2);
+
+    // A clause that no longer exists falls back to the first one.
+    const short = loaded({
+      ...RENTAL_SAMPLE.analyses.en!,
+      points: [RENTAL_SAMPLE.analyses.en!.points[0]!],
+    });
+    expect(
+      activeDoc(workspaceReducer(after, { type: 'replaceAnalysis', id: 'b', loaded: short }))
+        ?.selectedPointId,
+    ).toBe('p1');
+  });
+
   it('lets the reader choose which papers to compare', () => {
     const state = run([{ type: 'setCompare', slot: 0, id: 'b' }], withTwoPapers());
     expect(state.compareIds).toEqual(['b', 'b']);
@@ -197,5 +234,46 @@ describe('routes', () => {
     expect(readRouteDocId({ clauseAnatomyDoc: 'paper-1' })).toBe('paper-1');
     expect(readRouteDocId({ clauseAnatomyDoc: 7 })).toBeNull();
     expect(readRouteDocId(null)).toBeNull();
+  });
+});
+
+describe('session storage (papers survive a refresh, not a closed tab)', () => {
+  beforeEach(() => window.sessionStorage.clear());
+
+  it('saves and restores the library and the open paper', () => {
+    const state = withTwoPapers();
+    writeSession(state);
+    const restored = readSession();
+
+    expect(restored?.docs.map((doc) => doc.id)).toEqual(['b', 'a']);
+    expect(restored?.activeId).toBe('b');
+    expect(restored?.view).toBe('home');
+    expect(restored?.docs[0]?.loaded.analysis.documentType).toBe(
+      state.docs[0]?.loaded.analysis.documentType,
+    );
+  });
+
+  it('clears storage when the last paper is removed', () => {
+    writeSession(withTwoPapers());
+    writeSession(initialWorkspace);
+    expect(readSession()).toBeNull();
+  });
+
+  it('ignores damaged or foreign data instead of breaking the workspace', () => {
+    window.sessionStorage.setItem('clause-anatomy:session', 'not json');
+    expect(readSession()).toBeNull();
+    window.sessionStorage.setItem(
+      'clause-anatomy:session',
+      JSON.stringify({ docs: [{ id: 'x' }] }),
+    );
+    expect(readSession()).toBeNull();
+    window.sessionStorage.setItem(
+      'clause-anatomy:session',
+      JSON.stringify({
+        docs: [{ id: 'a', loaded: { text: 't', analysis: { language: 'en', points: [] } } }],
+        activeId: 'gone',
+      }),
+    );
+    expect(readSession()).toMatchObject({ activeId: 'a' });
   });
 });

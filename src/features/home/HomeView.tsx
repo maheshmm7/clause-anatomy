@@ -149,7 +149,7 @@ export function HomeView(props: HomeViewProps) {
       {liveDisabled && <Notice tone="warning" title={t('aiOffline')} />}
 
       <div className="home-grid">
-        <Panel number="01" title={t('inputTitle')} icon="plus" className="panel--intake">
+        <Panel number="00A" title={t('inputTitle')} icon="plus" className="panel--intake">
           <ExplanationLanguageSelect />
 
           <div className="intake-grid">
@@ -285,7 +285,7 @@ export function HomeView(props: HomeViewProps) {
         </Panel>
 
         <Panel
-          number="02"
+          number="00B"
           title={t('libraryTitle')}
           icon="layers"
           className="panel--library"
@@ -348,7 +348,7 @@ export function HomeView(props: HomeViewProps) {
           )}
         </Panel>
 
-        <Panel number="03" title={t('howTitle')} icon="list" className="panel--how">
+        <Panel number="00C" title={t('howTitle')} icon="list" className="panel--how">
           <ol className="how">
             {STEPS.map((step, index) => (
               <li key={step.title} className="how__step">

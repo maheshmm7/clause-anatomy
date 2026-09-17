@@ -157,7 +157,7 @@ export function PlanView() {
       </ViewHeader>
 
       <div className="dash-grid">
-        <Panel number="A" title={t('dutiesHeading')} icon="checkCircle" className="panel--wide">
+        <Panel number="08A" title={t('dutiesHeading')} icon="checkCircle" className="panel--wide">
           {doc.perspective === null ? (
             <RolePicker
               analysis={analysis}
@@ -205,7 +205,7 @@ export function PlanView() {
           )}
         </Panel>
 
-        <Panel number="B" title={t('datesHeading')} icon="calendar">
+        <Panel number="08B" title={t('datesHeading')} icon="calendar">
           {analysis.keyDates.length === 0 ? (
             <p className="empty">{t('noDates')}</p>
           ) : (
@@ -232,9 +232,9 @@ export function PlanView() {
           )}
         </Panel>
 
-        <LegalHelpPanel number="C" />
+        <LegalHelpPanel number="08C" />
 
-        <Panel number="D" title={t('briefHeading')} icon="chat" className="panel--wide brief">
+        <Panel number="08D" title={t('briefHeading')} icon="chat" className="panel--wide brief">
           <p className="hint">{t('briefHint')}</p>
           <ol className="brief__questions">
             {questions.map((question) => (

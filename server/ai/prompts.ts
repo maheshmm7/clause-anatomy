@@ -27,16 +27,19 @@ ${SHARED_RULES}
 How to fill the JSON:
 1. Write every field except "quote", "term" and "sourceLabel" in ${englishName}. Use very simple, short sentences, as if explaining to someone who did not finish school. Avoid legal words; when one is unavoidable, list it in "terms".
 2. Choose the 5-15 points that matter most to the people in this paper: money, deadlines, duties, prohibitions, penalties, rights, ending the agreement, and risks. Order by importance. Every point needs a supporting "quote"; if there is none, leave the point out.
-3. Break each point into its anatomy: "rules" (who must / must not / may do what), "conditions" (unless / only if / except), "consequences" (what happens if the rule is broken), and "deadline".
-4. "favours": which party the point mainly benefits, so each reader can see what is good or risky for them.
-5. "terms": legal words or section references in the point. If the meaning comes from general law rather than the paper (for example, what "Section 138 of the Negotiable Instruments Act" is about), set source to "general".
-6. "check": for each high or medium importance point, one Yes/No question about a realistic everyday situation whose answer needs real understanding of the point (not a repeat of the text). Mix Yes and No answers.
-7. "scenarios": up to 3 common "What if…?" questions for this kind of paper, as small Yes/No decision trees (at most 4 questions deep). Outcomes must state only what this paper says. Every "yes"/"no" must be the id of an existing node or outcome. Leave the list empty if the paper does not support any.
-8. "keyDates": only complete calendar dates written in the paper, as YYYY-MM-DD. Never calculate or guess dates.
-9. "notice": fill only for notices, demand letters and court papers.
-10. "urgency": "urgent" for arrest, warrants, summons, eviction or court hearings; "soon" for demands with a deadline under 30 days; otherwise "none".
-11. "lawyerQuestions": neutral, specific questions the reader could ask a lawyer about this paper.
-12. If the text is not a legal paper, set category to "not-legal", describe what it seems to be in "summary", and leave all lists empty.`;
+3. Write BOTH explanations for every point, and make them clearly different:
+   - "simple": ONE sentence, at most 20 words, everyday words, only the single most important thing for the reader.
+   - "detailed": 2-4 sentences that ADD what "simple" leaves out: the exact amounts, dates and deadlines, who must do it, the conditions or exceptions, and what happens if it is not followed. Never repeat the "simple" sentence.
+4. Break each point into its anatomy: "rules" (who must / must not / may do what), "conditions" (unless / only if / except), "consequences" (what happens if the rule is broken), and "deadline".
+5. "favours": which party the point mainly benefits, so each reader can see what is good or risky for them.
+6. "terms": legal words or section references in the point. If the meaning comes from general law rather than the paper (for example, what "Section 138 of the Negotiable Instruments Act" is about), set source to "general".
+7. "check": for each high or medium importance point, one Yes/No question about a realistic everyday situation whose answer needs real understanding of the point (not a repeat of the text). Mix Yes and No answers.
+8. "scenarios": up to 3 common "What if…?" questions for this kind of paper, as small Yes/No decision trees (at most 4 questions deep). Outcomes must state only what this paper says. Every "yes"/"no" must be the id of an existing node or outcome. Leave the list empty if the paper does not support any.
+9. "keyDates": only complete calendar dates written in the paper, as YYYY-MM-DD. Never calculate or guess dates.
+10. "notice": fill only for notices, demand letters and court papers.
+11. "urgency": "urgent" for arrest, warrants, summons, eviction or court hearings; "soon" for demands with a deadline under 30 days; otherwise "none".
+12. "lawyerQuestions": neutral, specific questions the reader could ask a lawyer about this paper.
+13. If the text is not a legal paper, set category to "not-legal", describe what it seems to be in "summary", and leave all lists empty.`;
 }
 
 export const EXTRACTION_INSTRUCTION = `You transcribe photos and scans of paper documents.

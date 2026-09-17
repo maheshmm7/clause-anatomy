@@ -186,7 +186,7 @@ The app is a static front-end plus one API. On **Vercel**, `vercel.json` builds 
 - Quote verification proves a quote **exists** in the paper, not that the explanation of it is correct.
 - "General information" about Acts and sections comes from the model's general knowledge and is labelled accordingly.
 - Read-aloud and voice questions depend on the voices and speech recognition available in the reader's browser.
-- The session library (up to 6 papers), notes and flags live only in the open browser tab and are lost on reload — by design, nothing is stored.
+- The session library (up to 6 papers), notes and flags stay inside the open browser tab (kept across a refresh in `sessionStorage`) and are cleared when the tab is closed — by design, nothing reaches a server.
 - Clause matching in _Compare_ works best for papers of the same kind explained in the same language.
 - Rate limiting is in-memory per server instance; a multi-instance deployment should use a shared store.
 - Interface translations (Hindi, Telugu) were written for this project and should be reviewed by native speakers before wide release.
