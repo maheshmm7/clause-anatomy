@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { detectUiLanguage } from '../settings/SettingsProvider';
 import { expectNoAxeViolations } from '../test/helpers';
 import { Select } from './Select';
@@ -36,6 +36,25 @@ const setup = () => {
 };
 
 describe('Select (select-only combobox)', () => {
+  it('follows its button when the page scrolls, and closes once the button is off screen', async () => {
+    const { user, combobox } = setup();
+    await user.click(combobox);
+    expect(combobox).toHaveAttribute('aria-expanded', 'true');
+
+    // A small scroll (the page, a dialog body) keeps the list open.
+    fireEvent.scroll(window);
+    fireEvent.scroll(document.body);
+    expect(combobox).toHaveAttribute('aria-expanded', 'true');
+
+    // Once the button has scrolled out of view, the list closes.
+    vi.spyOn(combobox, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: window.innerHeight + 50, width: 200, height: 40 }),
+    );
+    fireEvent.scroll(window);
+    expect(combobox).toHaveAttribute('aria-expanded', 'false');
+    vi.restoreAllMocks();
+  });
+
   it('is named by its label, shows the value and is accessible open and closed', async () => {
     const { user, combobox } = setup();
     expect(combobox).toHaveTextContent('English');

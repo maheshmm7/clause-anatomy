@@ -1,4 +1,12 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react';
 import { Icon } from './Icon';
 
 export interface SelectOption<T extends string> {
@@ -53,20 +61,29 @@ export function Select<T extends string>({
   const selected = options[selectedIndex];
   const last = options.length - 1;
 
-  const openList = (index = selectedIndex): void => {
+  /**
+   * Places the list next to its button. Returns false when the button has scrolled out
+   * of view (the list then closes rather than floating over unrelated content).
+   */
+  const placeList = useCallback((): boolean => {
     const rect = rootRef.current?.querySelector('button')?.getBoundingClientRect();
-    if (rect) {
-      const below = window.innerHeight - rect.bottom;
-      const upward = below < 280 && rect.top > below;
-      const width = Math.max(rect.width, 176);
-      setPosition({
-        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-        width,
-        ...(upward
-          ? { bottom: window.innerHeight - rect.top + 6, maxHeight: Math.min(288, rect.top - 16) }
-          : { top: rect.bottom + 6, maxHeight: Math.min(288, below - 16) }),
-      });
-    }
+    if (!rect) return true;
+    if (rect.bottom < 0 || rect.top > window.innerHeight) return false;
+    const below = window.innerHeight - rect.bottom;
+    const upward = below < 280 && rect.top > below;
+    const width = Math.max(rect.width, 176);
+    setPosition({
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      width,
+      ...(upward
+        ? { bottom: window.innerHeight - rect.top + 6, maxHeight: Math.min(288, rect.top - 16) }
+        : { top: rect.bottom + 6, maxHeight: Math.min(288, below - 16) }),
+    });
+    return true;
+  }, []);
+
+  const openList = (index = selectedIndex): void => {
+    placeList();
     setActive(index);
     setOpen(true);
   };
@@ -77,32 +94,39 @@ export function Select<T extends string>({
     setOpen(false);
   };
 
-  // Close when the pointer goes down elsewhere, or the page scrolls or resizes under it.
+  // Close when the pointer goes down elsewhere. When the page scrolls or resizes, the
+  // list follows its button (a small scroll must not close it), and closes only once
+  // the button has left the screen.
   useEffect(() => {
     if (!open) return undefined;
     const onPointerDown = (event: PointerEvent): void => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    const onScroll = (event: Event): void => {
-      if (event.target !== listRef.current) setOpen(false);
+    const follow = (event: Event): void => {
+      if (event.target === listRef.current) return;
+      if (!placeList()) setOpen(false);
     };
-    const close = (): void => setOpen(false);
     document.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', close);
+    window.addEventListener('scroll', follow, true);
+    window.addEventListener('resize', follow);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', follow, true);
+      window.removeEventListener('resize', follow);
     };
-  }, [open]);
+  }, [open, placeList]);
 
-  // Keep the highlighted option in view while moving through a long list.
+  // Keep the highlighted option in view while moving through a long list. Only the list
+  // scrolls: moving the page or dialog here would shift the list away from its button.
   useEffect(() => {
-    if (!open) return;
-    listRef.current
-      ?.querySelector<HTMLElement>(`[data-index="${active}"]`)
-      ?.scrollIntoView({ block: 'nearest' });
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>(`[data-index="${active}"]`);
+    if (!open || !list || !item) return;
+    if (item.offsetTop < list.scrollTop) {
+      list.scrollTop = item.offsetTop;
+    } else if (item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight;
+    }
   }, [open, active]);
 
   const matchTypeahead = (key: string): number => {
