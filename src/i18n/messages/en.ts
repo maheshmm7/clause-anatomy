@@ -444,7 +444,6 @@ export const en = {
   footerLegalAid: 'NALSA legal aid: 15100',
   footerEmergency: 'Emergency: 112',
   footerCopyright: '© {year} Clause Anatomy. Open source under the MIT License.',
-  footerBuiltWith: 'Built with Google Gemini for Google PromptWars.',
   legalUpdated: 'Last updated: {date}',
   legalBack: 'Back to home',
   legalContents: 'On this page',

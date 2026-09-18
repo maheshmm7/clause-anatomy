@@ -34,6 +34,14 @@ test.describe('reader journey', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: /Understand any legal paper/ }),
     ).toBeVisible();
+
+    // From the workspace, one click leads back to the home page.
+    await page.goForward();
+    await page.getByRole('link', { name: 'Go to the home page' }).click();
+    await expect(page).toHaveURL(/#\/$/);
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Understand any legal paper/ }),
+    ).toBeVisible();
   });
 
   test('legal pages are reachable from the footer, readable and accessible', async ({ page }) => {

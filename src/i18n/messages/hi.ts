@@ -423,7 +423,6 @@ export const hi: Messages = {
   footerLegalAid: 'NALSA कानूनी मदद: 15100',
   footerEmergency: 'आपातकाल: 112',
   footerCopyright: '© {year} Clause Anatomy. MIT लाइसेंस के तहत ओपन सोर्स।',
-  footerBuiltWith: 'Google PromptWars के लिए Google Gemini से बनाया गया।',
   legalUpdated: 'आख़िरी बदलाव: {date}',
   legalBack: 'होम पर वापस',
   legalContents: 'इस पेज पर',

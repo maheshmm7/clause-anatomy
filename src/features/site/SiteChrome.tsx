@@ -186,7 +186,6 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
       </div>
       <div className="site-footer__bottom">
         <Copyright />
-        <p>{t('footerBuiltWith')}</p>
       </div>
     </footer>
   );

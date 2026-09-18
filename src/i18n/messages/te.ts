@@ -425,7 +425,6 @@ export const te: Messages = {
   footerLegalAid: 'NALSA న్యాయ సహాయం: 15100',
   footerEmergency: 'అత్యవసరం: 112',
   footerCopyright: '© {year} Clause Anatomy. MIT లైసెన్స్ కింద ఓపెన్ సోర్స్.',
-  footerBuiltWith: 'Google PromptWars కోసం Google Gemini తో నిర్మించబడింది.',
   legalUpdated: 'చివరిగా మార్చినది: {date}',
   legalBack: 'హోమ్‌కు తిరిగి',
   legalContents: 'ఈ పేజీలో',

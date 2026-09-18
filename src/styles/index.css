@@ -1526,6 +1526,22 @@ textarea:disabled {
   }
 }
 
+/* Small phones: the home button replaces the top bar's logo (the menu still shows it),
+   and buttons stop growing with the text size so everything fits on one line. */
+@media (max-width: 25rem) {
+  .topbar__brand {
+    display: none;
+  }
+
+  .topbar .icon-btn,
+  .topbar .btn--search,
+  .topbar .btn--new {
+    width: min(2.75rem, 44px);
+    height: min(2.75rem, 44px);
+    min-height: 0;
+  }
+}
+
 /* Bottom navigation (phones & tablets) */
 .bottom-nav {
   position: fixed;

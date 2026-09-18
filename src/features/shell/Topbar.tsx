@@ -5,8 +5,8 @@ import { Logo } from '../../components/Logo';
 import { useI18n } from '../../i18n/I18nProvider';
 
 /**
- * Top bar: breadcrumb (workspace / paper / section), the paper's status, search, settings
- * and "new paper". Phones and tablets also get the menu button and the logo; on large
+ * Top bar: breadcrumb (workspace / paper / section), the paper's status, a way back to
+ * the home page, search, settings and "new paper". Phones and tablets also get the menu button and the logo; on large
  * screens the brand appears here only while the sidebar is collapsed (the sidebar's own
  * header holds the brand and the collapse toggle otherwise).
  */
@@ -87,6 +87,10 @@ export function Topbar({
       </nav>
 
       <div className="topbar__actions">
+        <a className="icon-btn" href="#/" title={t('actionHomePage')}>
+          <Icon name="home" />
+          <span className="visually-hidden">{t('actionHomePage')}</span>
+        </a>
         {showDoc && analysis && (
           <ul className="topbar__status">
             <li className="chip chip--ok">
