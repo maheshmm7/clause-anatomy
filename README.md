@@ -4,6 +4,8 @@
 
 Built for **Google PromptWars · Challenge vertical: _AI for Legal Assistance & Access_**, powered by **Google Gemini**.
 
+**Live demo: [clause-anatomy.vercel.app](https://clause-anatomy.vercel.app)**. Try an example with no setup, or paste your own paper.
+
 > Clause Anatomy explains legal papers in simple words. It is **not a lawyer** and does **not** give legal advice. AI can make mistakes: always check the original paper and talk to a lawyer or free legal aid (India: **NALSA 15100**) before important decisions.
 
 ---
