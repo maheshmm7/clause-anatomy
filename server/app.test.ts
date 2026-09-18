@@ -21,13 +21,31 @@ const HTML_BASE64 = Buffer.from('<html><script>alert(1)</script></html>').toStri
 function setup(options: { rateLimitMax?: number; withAi?: boolean } = {}) {
   const ai = new FakeAiClient();
   const logger = { error: vi.fn() };
+  // Clients built for readers' own keys, with the key each one was given.
+  const userClients: { key: string; ai: FakeAiClient }[] = [];
   const app = createApp({
     ai: options.withAi === false ? null : ai,
+    aiForKey: (key) => {
+      const client = new FakeAiClient();
+      userClients.push({ key, ai: client });
+      // Lets a test queue replies before the request builds the client.
+      client.queue(...pendingUserReplies.splice(0));
+      return client;
+    },
     rateLimitMax: options.rateLimitMax ?? 100,
     logger,
   });
-  return { app, ai, logger };
+  const pendingUserReplies: unknown[] = [];
+  return {
+    app,
+    ai,
+    logger,
+    userClients,
+    queueForUserKey: (reply: unknown) => pendingUserReplies.push(reply),
+  };
 }
+
+const USER_KEY = 'test.reader.key.not-real.0123456789';
 
 describe('GET /api/health', () => {
   it('reports whether AI is available', async () => {
@@ -195,6 +213,55 @@ describe('POST /api/ask', () => {
   });
 });
 
+describe("a reader's own Gemini key", () => {
+  const body = { text: RENT_TEXT, question: 'When is rent due?', language: 'en' };
+  const answer = { basis: 'document', answer: 'By the 5th.', quotes: [] };
+
+  it('is used for that request instead of the server key', async () => {
+    const { app, ai, userClients, queueForUserKey } = setup();
+    queueForUserKey(answer);
+
+    const res = await request(app).post('/api/ask').set('x-gemini-api-key', USER_KEY).send(body);
+
+    expect(res.status).toBe(200);
+    expect(userClients).toHaveLength(1);
+    expect(userClients[0]?.key).toBe(USER_KEY);
+    expect(userClients[0]?.ai.requests).toHaveLength(1);
+    expect(ai.requests).toHaveLength(0);
+    // The key is never echoed back.
+    expect(JSON.stringify(res.body)).not.toContain(USER_KEY);
+    expect(JSON.stringify(res.headers)).not.toContain(USER_KEY);
+  });
+
+  it('makes live AI work even when the server has no key', async () => {
+    const { app, queueForUserKey } = setup({ withAi: false });
+    queueForUserKey(answer);
+    expect((await request(app).post('/api/ask').send(body)).status).toBe(503);
+    const res = await request(app).post('/api/ask').set('x-gemini-api-key', USER_KEY).send(body);
+    expect(res.status).toBe(200);
+  });
+
+  it('refuses a malformed key before any AI call, without repeating it', async () => {
+    const { app, ai, userClients } = setup();
+    for (const bad of ['short', 'has spaces in it and is long enough to pass', 'x'.repeat(200)]) {
+      const res = await request(app).post('/api/ask').set('x-gemini-api-key', bad).send(body);
+      expect(res.status).toBe(401);
+      expect(apiErrorSchema.parse(res.body).error.code).toBe('ai_key_invalid');
+      expect(JSON.stringify(res.body)).not.toContain(bad);
+    }
+    expect(userClients).toHaveLength(0);
+    expect(ai.requests).toHaveLength(0);
+  });
+
+  it('still counts toward the rate limit', async () => {
+    const { app, queueForUserKey } = setup({ rateLimitMax: 1 });
+    queueForUserKey(answer);
+    const send = () => request(app).post('/api/ask').set('x-gemini-api-key', USER_KEY).send(body);
+    expect((await send()).status).toBe(200);
+    expect((await send()).status).toBe(429);
+  });
+});
+
 describe('POST /api/translate', () => {
   const items = [
     { id: 'summary', text: 'You rent the flat for 11 months.' },
@@ -265,6 +332,41 @@ describe('POST /api/translate', () => {
     }));
     expect((await send({ language: 'te', items: tooMuch })).status).toBe(400);
     expect(ai.requests).toHaveLength(0);
+  });
+
+  it('translates a long explanation in chunks, at most two at a time', async () => {
+    const { app, ai } = setup();
+    let running = 0;
+    let most = 0;
+    const generate = ai.generateJson.bind(ai);
+    ai.generateJson = async (req) => {
+      running += 1;
+      most = Math.max(most, running);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      try {
+        return await generate(req);
+      } finally {
+        running -= 1;
+      }
+    };
+    const many = Array.from({ length: 150 }, (_, index) => ({
+      id: `t${index}`,
+      text: `Text ${index}`,
+    }));
+    for (let start = 0; start < many.length; start += 70) {
+      ai.queue({
+        items: many
+          .slice(start, start + 70)
+          .map((item) => ({ id: item.id, text: `HI ${item.text}` })),
+      });
+    }
+
+    const res = await request(app).post('/api/translate').send({ language: 'hi', items: many });
+
+    expect(res.status).toBe(200);
+    expect(ai.requests).toHaveLength(3);
+    expect(most).toBe(2);
+    expect(res.body.items[149]).toEqual({ id: 't149', text: 'HI Text 149' });
   });
 
   it('shares the AI rate limit with the other AI routes', async () => {

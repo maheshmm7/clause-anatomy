@@ -41,17 +41,31 @@ export function readSession(): WorkspaceState | null {
   }
 }
 
+function withoutTranslations(doc: WorkspaceDoc): WorkspaceDoc {
+  const { translations: _cached, ...loaded } = doc.loaded;
+  return { ...doc, loaded };
+}
+
 export function writeSession(state: WorkspaceState): void {
   try {
     if (state.docs.length === 0) {
       window.sessionStorage.removeItem(KEY);
       return;
     }
-    window.sessionStorage.setItem(
-      KEY,
-      JSON.stringify({ docs: state.docs, activeId: state.activeId }),
-    );
+    try {
+      window.sessionStorage.setItem(
+        KEY,
+        JSON.stringify({ docs: state.docs, activeId: state.activeId }),
+      );
+    } catch {
+      // Storage is full: keep every paper as shown now, without the other languages
+      // cached for it (they are translated again if the reader switches back).
+      window.sessionStorage.setItem(
+        KEY,
+        JSON.stringify({ docs: state.docs.map(withoutTranslations), activeId: state.activeId }),
+      );
+    }
   } catch {
-    // Storage can be full or blocked; the workspace still works for this page view.
+    // Still too large, or storage is blocked: the workspace works for this page view.
   }
 }

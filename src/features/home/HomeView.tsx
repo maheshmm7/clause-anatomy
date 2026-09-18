@@ -4,11 +4,12 @@ import type { FlowError, PendingUpload } from '../../app/flow';
 import { useWorkspace } from '../../app/WorkspaceContext';
 import { ExplanationLanguageSelect } from '../../components/controls';
 import { Icon, type IconName } from '../../components/Icon';
-import { Notice, Panel } from '../../components/ui';
+import { Notice, OwnKeyButton, Panel } from '../../components/ui';
 import { useFocusOnMount } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/messages/en';
 import { needsAttention } from '../../lib/perspective';
+import { KEY_FIXABLE_ERRORS } from '../../lib/userKey';
 import { SAMPLES, type SampleId } from '../../samples';
 import { ConsentPanel } from './ConsentPanel';
 
@@ -19,10 +20,18 @@ export interface HomeViewProps {
   error: FlowError | null;
   pending: PendingUpload | null;
   onSubmitText: (text: string) => void;
+  /**
+   * The pasted text, kept by the parent: the progress screen replaces this view, so a
+   * failed explanation must not lose what the reader pasted.
+   */
+  draft: string;
+  onDraftChange: (text: string) => void;
   onSubmitFile: (file: File) => void;
   onLoadSample: (id: SampleId) => void;
   onConfirmConsent: (pending: PendingUpload) => void;
   onCancelConsent: () => void;
+  /** Opens settings at the field where a reader can add their own Gemini key. */
+  onOpenSettings: () => void;
 }
 
 interface TileProps {
@@ -77,8 +86,9 @@ export function HomeView(props: HomeViewProps) {
   const { t } = useI18n();
   const { state, go, dispatch } = useWorkspace();
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
-  const [drawer, setDrawer] = useState<Drawer>(null);
-  const [text, setText] = useState('');
+  const text = props.draft;
+  // Coming back with pasted text (e.g. after an error): the paste box is open again.
+  const [drawer, setDrawer] = useState<Drawer>(text ? 'paste' : null);
   const [dropActive, setDropActive] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -144,9 +154,17 @@ export function HomeView(props: HomeViewProps) {
       </header>
 
       {props.error && (
-        <Notice tone="danger" urgent title={t(props.error.key, props.error.values)} />
+        <Notice tone="danger" urgent title={t(props.error.key, props.error.values)}>
+          {KEY_FIXABLE_ERRORS.has(props.error.key) && (
+            <OwnKeyButton onClick={props.onOpenSettings} />
+          )}
+        </Notice>
       )}
-      {liveDisabled && <Notice tone="warning" title={t('aiOffline')} />}
+      {liveDisabled && (
+        <Notice tone="warning" title={t('aiOffline')}>
+          <OwnKeyButton onClick={props.onOpenSettings} />
+        </Notice>
+      )}
 
       <div className="home-grid">
         <Panel number="00A" title={t('inputTitle')} icon="plus" className="panel--intake">
@@ -231,7 +249,7 @@ export function HomeView(props: HomeViewProps) {
                 rows={9}
                 maxLength={LIMITS.maxDocumentChars}
                 aria-describedby={ids.count}
-                onChange={(event) => setText(event.target.value)}
+                onChange={(event) => props.onDraftChange(event.target.value)}
               />
               <div className="drawer__footer">
                 <p id={ids.count} className="mono-note">

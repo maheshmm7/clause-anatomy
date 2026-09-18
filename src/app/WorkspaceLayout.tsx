@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Dialog } from '../components/Dialog';
 import { Icon } from '../components/Icon';
-import { Notice, Spinner } from '../components/ui';
+import { Notice, OwnKeyButton, Spinner } from '../components/ui';
 import { BottomNav } from '../features/shell/BottomNav';
 import { Sidebar } from '../features/shell/Sidebar';
 import { Topbar } from '../features/shell/Topbar';
@@ -9,6 +9,7 @@ import { SiteFooter } from '../features/site/SiteChrome';
 import { useMediaQuery } from '../hooks/dom';
 import { useI18n } from '../i18n/I18nProvider';
 import { readPreference, writePreference } from '../lib/storage';
+import { KEY_FIXABLE_ERRORS } from '../lib/userKey';
 import { useSettings } from '../settings/SettingsProvider';
 import type { useDocumentFlow } from './useDocumentFlow';
 import { isDocumentView } from './workspace';
@@ -102,7 +103,12 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
   const [collapsed, setCollapsed] = useSidebarCollapsed();
   const [menuOpen, setMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<'closed' | 'open' | 'key'>('closed');
+  // Pasted text survives the progress screen; it belongs to the library as it was when
+  // typed, so once a paper opens (the library changes) the paste box starts empty again.
+  const libraryKey = `${state.activeId ?? ''}:${state.docs.length}`;
+  const [draft, setDraft] = useState({ text: '', libraryKey });
+  const draftText = draft.libraryKey === libraryKey ? draft.text : '';
 
   // Back/Forward closes any open menu.
   useEffect(() => {
@@ -140,7 +146,8 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
   const showBottomNav = Boolean(doc) && isDocumentView(state.view);
   const railCollapsed = wide && collapsed;
   const drawerOpen = menuOpen && !wide;
-  const openSettings = (): void => setSettingsOpen(true);
+  const openSettings = (): void => setSettings('open');
+  const openKeySettings = (): void => setSettings('key');
 
   return (
     <>
@@ -171,11 +178,11 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
           />
           <main id="main" className={`workspace workspace--${state.view}`} tabIndex={-1}>
             {flow.state.stage === 'idle' && flow.state.error && state.view !== 'home' && (
-              <Notice
-                tone="danger"
-                urgent
-                title={t(flow.state.error.key, flow.state.error.values)}
-              />
+              <Notice tone="danger" urgent title={t(flow.state.error.key, flow.state.error.values)}>
+                {KEY_FIXABLE_ERRORS.has(flow.state.error.key) && (
+                  <OwnKeyButton onClick={openKeySettings} />
+                )}
+              </Notice>
             )}
             <Suspense fallback={<Spinner />}>
               {flow.state.stage === 'working' ? (
@@ -187,11 +194,14 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
                   aiAvailable={aiAvailable}
                   error={flow.state.error}
                   pending={flow.state.pending}
+                  draft={draftText}
+                  onDraftChange={(text) => setDraft({ text, libraryKey })}
                   onSubmitText={(text) => void flow.submitText(text)}
                   onSubmitFile={(file) => void flow.submitFile(file)}
                   onLoadSample={(id) => void flow.loadSample(id)}
                   onConfirmConsent={(pending) => void flow.confirmConsent(pending)}
                   onCancelConsent={flow.cancelConsent}
+                  onOpenSettings={openKeySettings}
                 />
               )}
             </Suspense>
@@ -249,9 +259,12 @@ export function WorkspaceLayout({ flow, aiAvailable, openLanding }: WorkspaceLay
           </Suspense>
         )}
       </div>
-      {settingsOpen && (
+      {settings !== 'closed' && (
         <Suspense fallback={null}>
-          <SettingsDialog onClose={() => setSettingsOpen(false)} />
+          <SettingsDialog
+            onClose={() => setSettings('closed')}
+            focusKeyField={settings === 'key'}
+          />
         </Suspense>
       )}
     </>

@@ -5,15 +5,33 @@ import {
   TextSizeSwitch,
   ThemeSwitch,
 } from '../../components/controls';
+import { useRef } from 'react';
 import { Dialog } from '../../components/Dialog';
 import { Icon } from '../../components/Icon';
 import { useI18n } from '../../i18n/I18nProvider';
+import { ApiKeySettings } from './ApiKeySettings';
 
-/** All preferences in one place. Changes apply immediately and stay on this device. */
-export function SettingsDialog({ onClose }: { onClose: () => void }) {
+/**
+ * All preferences in one place. Changes apply immediately and stay on this device.
+ * Opened from a "use your own key" prompt, it starts at the key field.
+ */
+export function SettingsDialog({
+  onClose,
+  focusKeyField = false,
+}: {
+  onClose: () => void;
+  focusKeyField?: boolean;
+}) {
   const { t } = useI18n();
+  const keyInput = useRef<HTMLInputElement>(null);
   return (
-    <Dialog id="settings-dialog" label={t('openSettings')} className="modal" onClose={onClose}>
+    <Dialog
+      id="settings-dialog"
+      label={t('openSettings')}
+      className="modal"
+      onClose={onClose}
+      initialFocus={focusKeyField ? keyInput : undefined}
+    >
       <div className="modal__head">
         <h2 className="modal__title">
           <Icon name="sliders" /> {t('openSettings')}
@@ -44,6 +62,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </h3>
           <ThemeSwitch />
           <TextSizeSwitch />
+        </section>
+        <section className="settings-group" aria-labelledby="settings-key">
+          <h3 id="settings-key" className="settings-group__title">
+            {t('settingsKeySection')}
+          </h3>
+          <ApiKeySettings inputRef={keyInput} />
         </section>
       </div>
       <div className="modal__foot">

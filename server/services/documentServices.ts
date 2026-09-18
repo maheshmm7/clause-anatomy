@@ -38,6 +38,8 @@ const TEMPERATURE = { analyze: 0.2, answer: 0.1, extract: 0, translate: 0.1 } as
  * about twice as fast as one long reply, without tripping free-tier per-minute limits.
  */
 const TRANSLATE_CHUNK_SIZE = 70;
+/** Chunks translated at the same time: free-tier keys allow only a few requests a minute. */
+const TRANSLATE_PARALLEL_CHUNKS = 2;
 
 export interface DocumentServices {
   analyze(request: AnalyzeRequest): Promise<AnalysisResult>;
@@ -99,23 +101,25 @@ export function createDocumentServices({
     async translate({ items, language }) {
       // Explanations never contain private numbers, but redact again: never trust the client.
       const safeItems = items.map((item) => ({ id: item.id, text: redact(item.text).text }));
-      // The texts are independent, so a long explanation is translated in a few parallel
-      // chunks: much faster than one long reply, and still one request for the browser.
+      // The texts are independent, so a long explanation is translated in chunks, a few
+      // at a time: much faster than one long reply, without tripping per-minute limits.
       const chunks: (typeof safeItems)[] = [];
       for (let start = 0; start < safeItems.length; start += TRANSLATE_CHUNK_SIZE) {
         chunks.push(safeItems.slice(start, start + TRANSLATE_CHUNK_SIZE));
       }
-      const replies = await Promise.all(
-        chunks.map((chunk) =>
-          ai.generateJson({
-            task: 'translate',
-            systemInstruction: translationInstruction(language),
-            parts: translationParts(chunk),
-            schema: translationSchema,
-            temperature: TEMPERATURE.translate,
-          }),
-        ),
-      );
+      const translateChunk = (chunk: typeof safeItems) =>
+        ai.generateJson({
+          task: 'translate',
+          systemInstruction: translationInstruction(language),
+          parts: translationParts(chunk),
+          schema: translationSchema,
+          temperature: TEMPERATURE.translate,
+        });
+      const replies: Awaited<ReturnType<typeof translateChunk>>[] = [];
+      for (let start = 0; start < chunks.length; start += TRANSLATE_PARALLEL_CHUNKS) {
+        const batch = chunks.slice(start, start + TRANSLATE_PARALLEL_CHUNKS);
+        replies.push(...(await Promise.all(batch.map(translateChunk))));
+      }
       // Map back by id; anything missing or empty keeps its original text, so the result
       // always has exactly the requested ids and nothing else.
       const translated = new Map(

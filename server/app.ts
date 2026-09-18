@@ -11,6 +11,7 @@ import {
   type HealthResult,
   type TranslateRequest,
 } from '../shared/schema.js';
+import { GEMINI_KEY_PATTERN, USER_KEY_HEADER } from '../shared/limits.js';
 import type { AiClient } from './ai/types.js';
 import { HttpError } from './lib/httpError.js';
 import {
@@ -27,6 +28,11 @@ import { createDocumentServices } from './services/documentServices.js';
 export interface AppOptions {
   /** `null` when no API key is configured: the UI still works with the built-in examples. */
   ai: AiClient | null;
+  /**
+   * Builds a client for a reader's own API key (sent in {@link USER_KEY_HEADER}).
+   * Without it, readers' keys are refused and only the server's key is used.
+   */
+  aiForKey?: (apiKey: string) => AiClient;
   rateLimitMax: number;
   /** Folder with the built front-end to serve (production only). */
   staticDir?: string;
@@ -40,7 +46,7 @@ const JSON_LIMIT = { text: '512kb', upload: '4.2mb' } as const;
  * Builds the Express application. All dependencies are injected so the exact same
  * app runs in tests (fake AI), local development, a Node server and serverless hosts.
  */
-export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): Express {
+export function createApp({ ai, aiForKey, rateLimitMax, staticDir, logger }: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
   // Behind one proxy hop (Vercel, Render, Cloud Run…) so rate limiting sees the real client IP.
@@ -65,6 +71,18 @@ export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): 
     }
     return services;
   };
+  /**
+   * A reader's own key, when sent, is used for this request only: never stored, never
+   * logged, never echoed back. Otherwise the server's key is used.
+   */
+  const servicesFor = (req: Pick<Request, 'get'>): NonNullable<typeof services> => {
+    const userKey = req.get(USER_KEY_HEADER);
+    if (userKey === undefined) return requireAi();
+    if (!aiForKey || !GEMINI_KEY_PATTERN.test(userKey)) {
+      throw new HttpError(401, 'ai_key_invalid', 'The Gemini API key was not accepted.');
+    }
+    return createDocumentServices({ ai: aiForKey(userKey) });
+  };
   const limiter = aiRateLimit(rateLimitMax);
 
   api.post(
@@ -73,7 +91,7 @@ export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): 
     express.json({ limit: JSON_LIMIT.text }),
     validateBody(analyzeRequestSchema),
     async (req: Request<unknown, unknown, AnalyzeRequest>, res) => {
-      res.json(await requireAi().analyze(req.body));
+      res.json(await servicesFor(req).analyze(req.body));
     },
   );
 
@@ -83,7 +101,7 @@ export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): 
     express.json({ limit: JSON_LIMIT.text }),
     validateBody(askRequestSchema),
     async (req: Request<unknown, unknown, AskRequest>, res) => {
-      res.json(await requireAi().answer(req.body));
+      res.json(await servicesFor(req).answer(req.body));
     },
   );
 
@@ -93,7 +111,7 @@ export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): 
     express.json({ limit: JSON_LIMIT.text }),
     validateBody(translateRequestSchema),
     async (req: Request<unknown, unknown, TranslateRequest>, res) => {
-      res.json(await requireAi().translate(req.body));
+      res.json(await servicesFor(req).translate(req.body));
     },
   );
 
@@ -103,7 +121,7 @@ export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): 
     express.json({ limit: JSON_LIMIT.upload }),
     validateBody(extractRequestSchema),
     async (req: Request<unknown, unknown, ExtractRequest>, res) => {
-      res.json(await requireAi().extract(req.body));
+      res.json(await servicesFor(req).extract(req.body));
     },
   );
 

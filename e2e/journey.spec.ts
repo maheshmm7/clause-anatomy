@@ -89,7 +89,16 @@ test.describe('reader journey', () => {
     await expect(dialog.getByRole('combobox', { name: 'Explain in' })).toContainText('తెలుగు');
     await dialog.getByRole('radio', { name: /Dark/ }).check();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    // A reader can add their own Gemini key; it is never shown again.
+    const keyInput = dialog.getByRole('textbox', { name: 'Gemini API key' });
+    await keyInput.fill('test.reader.key.not-real.0123456789');
+    await dialog.getByRole('button', { name: 'Save key' }).click();
+    await expect(dialog.getByRole('status')).toContainText('Your key is active');
+    await expect(keyInput).toHaveValue('');
     await expectAccessible(page);
+    await dialog.getByRole('button', { name: 'Remove key' }).click();
+    await expect(dialog.getByText('Your key is active')).toBeHidden();
   });
 
   test('rent agreement example: every dashboard section works and is accessible', async ({

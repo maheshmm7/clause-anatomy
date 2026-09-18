@@ -56,6 +56,13 @@ const en: LegalContent = {
         ],
       },
       {
+        heading: 'Your own API key',
+        body: [
+          'If you add your own Gemini API key in Settings, it is kept only in this browser tab (sessionStorage) and forgotten when you close the tab.',
+          'It is sent to our server with each AI request, used to call Google for that request only, and never stored, logged or shown back. You can remove it from Settings at any time.',
+        ],
+      },
+      {
         heading: 'Security',
         body: [
           'All requests are limited in size and rate, checked strictly, and protected by security headers. The AI key stays on the server.',
@@ -200,6 +207,13 @@ const hi: LegalContent = {
         ],
       },
       {
+        heading: 'आपकी अपनी API key',
+        body: [
+          'अगर आप सेटिंग्स में अपनी Gemini API key डालते हैं, तो वह सिर्फ़ इसी ब्राउज़र टैब (sessionStorage) में रहती है और टैब बंद करते ही मिट जाती है।',
+          'हर AI अनुरोध के साथ यह हमारे सर्वर पर भेजी जाती है, सिर्फ़ उसी अनुरोध के लिए Google को कॉल करने में इस्तेमाल होती है, और कभी सेव, लॉग या वापस दिखाई नहीं जाती। आप इसे कभी भी सेटिंग्स से हटा सकते हैं।',
+        ],
+      },
+      {
         heading: 'सुरक्षा',
         body: [
           'हर अनुरोध का आकार और गिनती सीमित है, सख़्ती से जाँचा जाता है और सुरक्षा हेडर से सुरक्षित है। AI की चाबी सिर्फ़ सर्वर पर रहती है।',
@@ -341,6 +355,13 @@ const te: LegalContent = {
           'మా వైపు ఏమీ లేదు. ఖాతాలు, డేటాబేస్, కుకీలు, అనలిటిక్స్ లేవు. కాగితాలు, నోట్స్, జవాబులు ఈ బ్రౌజర్ ట్యాబ్‌లోనే ఉంటాయి (రీలోడ్ చేసినా పోవు); ట్యాబ్ మూసినప్పుడు బ్రౌజర్ వాటిని తొలగిస్తుంది.',
           'ట్యాబ్ తెరిచి ఉన్నంత వరకు వివరణలను గుర్తుంచుకుంటుంది, అదే కాగితం మళ్ళీ పంపకుండా. సర్వర్ ఏ పత్రాలనూ ఉంచదు, లాగ్‌లలో ఎప్పుడూ రాయదు.',
           'మీ సెట్టింగ్‌లు (భాష, థీమ్, అక్షర పరిమాణం, చదివే స్థాయి) మీ బ్రౌజర్ లోకల్ స్టోరేజ్‌లో ఉంటాయి. సైట్ డేటా తొలగిస్తే అవి పోతాయి.',
+        ],
+      },
+      {
+        heading: 'మీ సొంత API key',
+        body: [
+          'మీరు సెట్టింగ్స్‌లో మీ Gemini API key జోడిస్తే, అది ఈ బ్రౌజర్ ట్యాబ్‌లో (sessionStorage) మాత్రమే ఉంటుంది, ట్యాబ్ మూసివేయగానే మరచిపోతుంది.',
+          'ప్రతి AI అభ్యర్థనతో ఇది మా సర్వర్‌కు పంపబడుతుంది, ఆ అభ్యర్థన కోసం మాత్రమే Google ని పిలవడానికి ఉపయోగించబడుతుంది, ఎప్పుడూ సేవ్, లాగ్ లేదా తిరిగి చూపబడదు. సెట్టింగ్స్ నుండి ఎప్పుడైనా తీసివేయవచ్చు.',
         ],
       },
       {

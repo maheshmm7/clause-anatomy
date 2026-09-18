@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RENTAL_B_SAMPLE } from '../samples/rental-b';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { flowReducer, initialFlowState, type LoadedDocument, type PendingUpload } from './flow';
@@ -250,6 +250,40 @@ describe('session storage (papers survive a refresh, not a closed tab)', () => {
     expect(restored?.view).toBe('home');
     expect(restored?.docs[0]?.loaded.analysis.documentType).toBe(
       state.docs[0]?.loaded.analysis.documentType,
+    );
+  });
+
+  it('keeps the papers without cached languages when storage is full', () => {
+    const state = withTwoPapers();
+    const first = state.docs[0]!;
+    const withCache = {
+      ...state,
+      docs: [
+        {
+          ...first,
+          loaded: { ...first.loaded, translations: { hi: first.loaded.analysis } },
+        },
+        ...state.docs.slice(1),
+      ],
+    };
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      this: Storage,
+      key: string,
+      value: string,
+    ) {
+      if (value.includes('"translations"')) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+
+    writeSession(withCache);
+    vi.restoreAllMocks();
+
+    const restored = readSession();
+    expect(restored?.docs.map((doc) => doc.id)).toEqual(['b', 'a']);
+    expect(restored?.docs[0]?.loaded.translations).toBeUndefined();
+    expect(restored?.docs[0]?.loaded.analysis.documentType).toBe(
+      first.loaded.analysis.documentType,
     );
   });
 

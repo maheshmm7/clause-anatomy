@@ -35,3 +35,12 @@ export const UPLOAD_MIME_TYPES = [
   'application/pdf',
 ] as const;
 export type UploadMimeType = (typeof UPLOAD_MIME_TYPES)[number];
+
+/**
+ * A reader may use their own Gemini API key. It is sent in this header on each AI
+ * request, used for that request only, and never stored or logged by the server.
+ */
+export const USER_KEY_HEADER = 'x-gemini-api-key';
+
+/** The characters and length of a Gemini API key (checked before it is ever used). */
+export const GEMINI_KEY_PATTERN = /^[A-Za-z0-9._-]{30,120}$/;

@@ -317,6 +317,7 @@ export const API_ERROR_CODES = [
   'ai_unavailable',
   'ai_busy',
   'ai_bad_response',
+  'ai_key_invalid',
   'not_found',
   'internal',
 ] as const;
