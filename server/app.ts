@@ -4,10 +4,12 @@ import {
   analyzeRequestSchema,
   askRequestSchema,
   extractRequestSchema,
+  translateRequestSchema,
   type AnalyzeRequest,
   type AskRequest,
   type ExtractRequest,
   type HealthResult,
+  type TranslateRequest,
 } from '../shared/schema.js';
 import type { AiClient } from './ai/types.js';
 import { HttpError } from './lib/httpError.js';
@@ -82,6 +84,16 @@ export function createApp({ ai, rateLimitMax, staticDir, logger }: AppOptions): 
     validateBody(askRequestSchema),
     async (req: Request<unknown, unknown, AskRequest>, res) => {
       res.json(await requireAi().answer(req.body));
+    },
+  );
+
+  api.post(
+    '/translate',
+    limiter,
+    express.json({ limit: JSON_LIMIT.text }),
+    validateBody(translateRequestSchema),
+    async (req: Request<unknown, unknown, TranslateRequest>, res) => {
+      res.json(await requireAi().translate(req.body));
     },
   );
 

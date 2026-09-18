@@ -20,6 +20,10 @@ export const LIMITS = {
   maxImageEdgePx: 1800,
   /** Pages read from a digital PDF. */
   maxPdfPages: 40,
+  /** Translating an explanation: how many texts, and how long each and all together. */
+  maxTranslateItems: 600,
+  maxTranslateItemChars: 1_500,
+  maxTranslateTotalChars: 60_000,
   /** Minimum characters of the source a quote must contain to count as verifiable. */
   minVerifiableQuoteChars: 15,
 } as const;

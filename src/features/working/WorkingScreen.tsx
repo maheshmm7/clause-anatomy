@@ -10,20 +10,26 @@ const STEPS: readonly { step: WorkingStep; key: MessageKey; icon: IconName }[] =
   { step: 'explaining', key: 'workingExplaining', icon: 'sparkle' },
 ];
 
+/** Changing language translates the explanation only: one short step. */
+const TRANSLATE_STEPS: typeof STEPS = [
+  { step: 'translating', key: 'workingTranslating', icon: 'globe' },
+];
+
 export function WorkingScreen({ step, onCancel }: { step: WorkingStep; onCancel: () => void }) {
   const { t } = useI18n();
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
+  const steps = step === 'translating' ? TRANSLATE_STEPS : STEPS;
   const currentIndex = Math.max(
     0,
-    STEPS.findIndex((item) => item.step === step),
+    steps.findIndex((item) => item.step === step),
   );
-  const currentKey = STEPS[currentIndex]?.key ?? 'workingReading';
+  const currentKey = steps[currentIndex]?.key ?? 'workingReading';
 
   return (
     <div className="working" aria-busy="true">
       <div className="working__counter" aria-hidden="true">
         <span className="working__current">0{currentIndex + 1}</span>
-        <span className="working__total">/03</span>
+        <span className="working__total">/0{steps.length}</span>
       </div>
       <h1 ref={headingRef} tabIndex={-1} aria-live="polite" className="working__title">
         {t(currentKey)}
@@ -37,7 +43,7 @@ export function WorkingScreen({ step, onCancel }: { step: WorkingStep; onCancel:
       </div>
 
       <ol className="stepper">
-        {STEPS.map((item, index) => {
+        {steps.map((item, index) => {
           const state =
             index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'waiting';
           return (

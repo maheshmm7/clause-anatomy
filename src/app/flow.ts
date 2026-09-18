@@ -1,3 +1,4 @@
+import type { ExplanationLanguage } from '../../shared/languages';
 import type { UploadMimeType } from '../../shared/limits';
 import type { AnalysisResult } from '../../shared/schema';
 import type { MessageValues } from '../i18n/format';
@@ -10,7 +11,7 @@ import type { MessageKey } from '../i18n/messages/en';
  * paper straight away. Pure reducer: every transition is unit-tested.
  */
 
-export type WorkingStep = 'reading' | 'protecting' | 'explaining';
+export type WorkingStep = 'reading' | 'protecting' | 'explaining' | 'translating';
 
 export interface FlowError {
   key: MessageKey;
@@ -35,6 +36,10 @@ export interface LoadedDocument {
   partialRead: boolean;
   /** The example is shown in English because live AI could not translate it. */
   languageFallback: boolean;
+  /** The language the paper was analysed in: translations are always made from it. */
+  sourceLanguage?: ExplanationLanguage;
+  /** Every language this paper has been shown in, so switching back is instant. */
+  translations?: Partial<Record<ExplanationLanguage, AnalysisResult>>;
 }
 
 export type FlowState =

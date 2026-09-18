@@ -116,6 +116,7 @@ export const te: Messages = {
   workingReading: 'మీ కాగితం చదువుతున్నాము…',
   workingProtecting: 'ప్రైవేట్ నంబర్లు దాచుతున్నాము…',
   workingExplaining: 'మీకు ముఖ్యమైన విషయాలు వెతుకుతున్నాము…',
+  workingTranslating: 'వివరణను అనువదిస్తున్నాము…',
   workingHint: 'పొడవైన కాగితాలకు ఒక నిమిషం వరకు పట్టవచ్చు.',
   cancel: 'రద్దు చేయండి',
 

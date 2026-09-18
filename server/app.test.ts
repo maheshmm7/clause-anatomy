@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { analysisResultSchema, answerResultSchema, apiErrorSchema } from '../shared/schema.js';
+import {
+  analysisResultSchema,
+  answerResultSchema,
+  apiErrorSchema,
+  translateResultSchema,
+} from '../shared/schema.js';
 import { createApp } from './app.js';
 import { HttpError } from './lib/httpError.js';
 import { FakeAiClient, RENT_TEXT, rentAnalysis } from './testing/fakes.js';
@@ -187,6 +192,89 @@ describe('POST /api/ask', () => {
       .post('/api/ask')
       .send({ text: RENT_TEXT, question: 'x'.repeat(501), language: 'en' });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/translate', () => {
+  const items = [
+    { id: 'summary', text: 'You rent the flat for 11 months.' },
+    { id: 'point.0.simple', text: 'Pay Rs. 15,000 by the 5th.' },
+  ];
+
+  it('translates only the given texts, maps them back by id and keeps unknown ids out', async () => {
+    const { app, ai } = setup();
+    ai.queue({
+      items: [
+        { id: 'point.0.simple', text: '5వ తేదీలోగా రూ. 15,000 చెల్లించండి.' },
+        { id: 'summary', text: 'మీరు ఫ్లాట్‌ను 11 నెలలు అద్దెకు తీసుకుంటారు.' },
+        { id: 'injected', text: 'should never appear' },
+      ],
+    });
+
+    const res = await request(app).post('/api/translate').send({ language: 'te', items });
+
+    expect(res.status).toBe(200);
+    expect(translateResultSchema.parse(res.body).items).toEqual([
+      { id: 'summary', text: 'మీరు ఫ్లాట్‌ను 11 నెలలు అద్దెకు తీసుకుంటారు.' },
+      { id: 'point.0.simple', text: '5వ తేదీలోగా రూ. 15,000 చెల్లించండి.' },
+    ]);
+    const last = ai.requests.at(-1);
+    expect(last?.task).toBe('translate');
+    expect(last?.systemInstruction).toContain('Telugu');
+    // The texts are fenced as untrusted data, never mixed into the instructions.
+    expect(ai.lastPromptText()).toMatch(/=== BEGIN TEXTS [0-9a-f-]{36} ===/);
+  });
+
+  it('keeps the original text for anything the model leaves out, and redacts again', async () => {
+    const { app, ai } = setup();
+    ai.queue({ items: [{ id: 'summary', text: '' }] });
+
+    const res = await request(app)
+      .post('/api/translate')
+      .send({
+        language: 'hi',
+        items: [...items, { id: 'party.0', text: 'Call 9876543210' }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([
+      items[0],
+      items[1],
+      { id: 'party.0', text: 'Call [PHONE HIDDEN]' },
+    ]);
+    expect(ai.lastPromptText()).not.toContain('9876543210');
+  });
+
+  it('rejects bad requests before any AI call', async () => {
+    const { app, ai } = setup();
+    const send = (body: unknown) =>
+      request(app)
+        .post('/api/translate')
+        .send(body as object);
+
+    expect((await send({ language: 'xx', items })).status).toBe(400);
+    expect((await send({ language: 'te', items: [] })).status).toBe(400);
+    expect((await send({ language: 'te', items: [items[0], items[0]] })).status).toBe(400);
+    expect((await send({ language: 'te', items: [{ id: 'bad id!', text: 'x' }] })).status).toBe(
+      400,
+    );
+    expect((await send({ language: 'te', items, extra: true })).status).toBe(400);
+    const tooMuch = Array.from({ length: 50 }, (_, index) => ({
+      id: `t${index}`,
+      text: 'x'.repeat(1_500),
+    }));
+    expect((await send({ language: 'te', items: tooMuch })).status).toBe(400);
+    expect(ai.requests).toHaveLength(0);
+  });
+
+  it('shares the AI rate limit with the other AI routes', async () => {
+    const { app, ai } = setup({ rateLimitMax: 1 });
+    ai.queue({ items: [] });
+    expect((await request(app).post('/api/translate').send({ language: 'te', items })).status).toBe(
+      200,
+    );
+    const limited = await request(app).post('/api/translate').send({ language: 'te', items });
+    expect(limited.status).toBe(429);
   });
 });
 

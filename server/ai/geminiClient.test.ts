@@ -8,8 +8,9 @@ import type { GenerateJsonRequest } from './types.js';
 type Reply = { text: string } | Error;
 
 function fakeSdk(...replies: Reply[]) {
+  // Replies are used in order; the last one repeats (like a model that stays overloaded).
   const generateContent = vi.fn(async () => {
-    const reply = replies.shift();
+    const reply = replies.length > 1 ? replies.shift() : replies[0];
     if (!reply) throw new Error('no reply');
     if (reply instanceof Error) throw reply;
     return reply;
@@ -35,6 +36,7 @@ function client(sdk: never, model = 'gemini-3.6-flash', fallbackModel: string | 
       model,
       fallbackModel,
       timeoutMs: 5_000,
+      retryDelayMs: 0,
       sdk,
       logger,
     }),
@@ -68,11 +70,16 @@ describe('createGeminiClient', () => {
     expect(call[0].config.abortSignal).toBeInstanceOf(AbortSignal);
   });
 
-  it('omits thinking settings for older models', async () => {
+  it.each([
+    ['gemini-2.5-flash', { thinkingBudget: 0 }],
+    ['gemini-2.5-flash-lite', { thinkingBudget: 0 }],
+    ['gemini-2.5-pro', undefined],
+    ['gemini-1.5-flash', undefined],
+  ])('uses the right thinking settings for %s', async (model, expected) => {
     const { sdk, generateContent } = fakeSdk(VALID);
-    await client(sdk, 'gemini-2.5-flash').client.generateJson(REQUEST);
+    await client(sdk, model).client.generateJson(REQUEST);
     const call = generateContent.mock.calls[0] as unknown as [{ config: Record<string, unknown> }];
-    expect(call[0].config.thinkingConfig).toBeUndefined();
+    expect(call[0].config.thinkingConfig).toEqual(expected);
   });
 
   it('retries once when the reply is not valid JSON for the schema', async () => {
@@ -116,8 +123,8 @@ describe('createGeminiClient', () => {
       { model: string; config: Record<string, unknown> },
     ][];
     expect(calls.map(([call]) => call.model)).toEqual(['gemini-3.6-flash', 'gemini-2.5-flash']);
-    // Older models do not accept thinkingLevel; the schema is still sent.
-    expect(calls[1]?.[0].config.thinkingConfig).toBeUndefined();
+    // Gemini 2.5 Flash gets no thinkingLevel (unsupported) and thinking switched off.
+    expect(calls[1]?.[0].config.thinkingConfig).toEqual({ thinkingBudget: 0 });
     expect(calls[1]?.[0].config.responseJsonSchema).toBeDefined();
     expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('PRIVATE DOCUMENT TEXT');
   });
@@ -143,6 +150,19 @@ describe('createGeminiClient', () => {
     expect(generateContent).toHaveBeenCalledTimes(1);
   });
 
+  it('waits and retries once when the model says "too many requests"', async () => {
+    const { sdk, generateContent } = fakeSdk(
+      new ApiError({ message: 'quota', status: 429 }),
+      VALID,
+    );
+    await expect(
+      client(sdk, 'gemini-3.6-flash', 'gemini-2.5-flash').client.generateJson(REQUEST),
+    ).resolves.toMatchObject({ basis: 'none' });
+    const calls = generateContent.mock.calls as unknown as [{ model: string }][];
+    // Same model twice: no need to fall back after a short pause.
+    expect(calls.map(([call]) => call.model)).toEqual(['gemini-3.6-flash', 'gemini-3.6-flash']);
+  });
+
   it('reports busy when the fallback is overloaded too', async () => {
     const { sdk } = fakeSdk(
       new ApiError({ message: 'overloaded', status: 503 }),
@@ -156,15 +176,16 @@ describe('createGeminiClient', () => {
   });
 
   it.each([
-    [new ApiError({ message: 'quota', status: 429 }), 503, 'ai_busy'],
-    [new ApiError({ message: 'overloaded', status: 503 }), 503, 'ai_busy'],
-    [new ApiError({ message: 'API key not valid', status: 400 }), 503, 'ai_unavailable'],
-    [new DOMException('timed out', 'TimeoutError'), 504, 'ai_busy'],
-    [new TypeError('fetch failed'), 503, 'ai_unavailable'],
-  ])('maps %s to a safe client error', async (failure, status, code) => {
+    // A rate limit gets one short retry; everything else fails at once.
+    [new ApiError({ message: 'quota', status: 429 }), 503, 'ai_busy', 2],
+    [new ApiError({ message: 'overloaded', status: 503 }), 503, 'ai_busy', 1],
+    [new ApiError({ message: 'API key not valid', status: 400 }), 503, 'ai_unavailable', 1],
+    [new DOMException('timed out', 'TimeoutError'), 504, 'ai_busy', 1],
+    [new TypeError('fetch failed'), 503, 'ai_unavailable', 1],
+  ])('maps %s to a safe client error', async (failure, status, code, calls) => {
     const { sdk, generateContent } = fakeSdk(failure);
     await expectHttpError(client(sdk).client.generateJson(REQUEST), status, code);
-    expect(generateContent).toHaveBeenCalledTimes(1);
+    expect(generateContent).toHaveBeenCalledTimes(calls);
   });
 
   it('never logs the document or prompt', async () => {

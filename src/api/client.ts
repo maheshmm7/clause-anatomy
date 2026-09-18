@@ -8,6 +8,8 @@ import type {
   ExtractRequest,
   ExtractResult,
   HealthResult,
+  TranslateRequest,
+  TranslateResult,
 } from '../../shared/schema';
 import type * as SchemaModule from '../../shared/schema';
 
@@ -83,6 +85,8 @@ export const api = {
     request('/api/analyze', (s) => s.analysisResultSchema, { method: 'POST', body, signal }),
   ask: (body: AskRequest, signal?: AbortSignal): Promise<AnswerResult> =>
     request('/api/ask', (s) => s.answerResultSchema, { method: 'POST', body, signal }),
+  translate: (body: TranslateRequest, signal?: AbortSignal): Promise<TranslateResult> =>
+    request('/api/translate', (s) => s.translateResultSchema, { method: 'POST', body, signal }),
   extract: (body: ExtractRequest, signal?: AbortSignal): Promise<ExtractResult> =>
     request('/api/extract', (s) => s.extractResultSchema, { method: 'POST', body, signal }),
 };

@@ -4,12 +4,15 @@ import {
   analysisSchema,
   answerSchema,
   extractionSchema,
+  translationSchema,
   type AnalysisResult,
   type AnalyzeRequest,
   type AnswerResult,
   type AskRequest,
   type ExtractRequest,
   type ExtractResult,
+  type TranslateRequest,
+  type TranslateResult,
 } from '../../shared/schema.js';
 import { isQuoteGrounded, prepareSource } from '../../shared/verifyQuote.js';
 import {
@@ -19,6 +22,8 @@ import {
   answerInstruction,
   answerParts,
   extractionParts,
+  translationInstruction,
+  translationParts,
 } from '../ai/prompts.js';
 import type { AiClient } from '../ai/types.js';
 import { detectMimeType } from '../lib/fileSignature.js';
@@ -26,12 +31,19 @@ import { HttpError } from '../lib/httpError.js';
 import { clip, postprocessAnalysis } from './postprocess.js';
 
 /** Temperatures are low: these tasks reward faithfulness, not creativity. */
-const TEMPERATURE = { analyze: 0.2, answer: 0.1, extract: 0 } as const;
+const TEMPERATURE = { analyze: 0.2, answer: 0.1, extract: 0, translate: 0.1 } as const;
+
+/**
+ * Texts per translation call: a full explanation (~130 texts) becomes 2 parallel calls —
+ * about twice as fast as one long reply, without tripping free-tier per-minute limits.
+ */
+const TRANSLATE_CHUNK_SIZE = 70;
 
 export interface DocumentServices {
   analyze(request: AnalyzeRequest): Promise<AnalysisResult>;
   answer(request: AskRequest): Promise<AnswerResult>;
   extract(request: ExtractRequest): Promise<ExtractResult>;
+  translate(request: TranslateRequest): Promise<TranslateResult>;
 }
 
 export interface DocumentServicesOptions {
@@ -82,6 +94,39 @@ export function createDocumentServices({
           ? 'general'
           : reply.basis;
       return { basis, answer: clip(reply.answer, 1200), quotes };
+    },
+
+    async translate({ items, language }) {
+      // Explanations never contain private numbers, but redact again: never trust the client.
+      const safeItems = items.map((item) => ({ id: item.id, text: redact(item.text).text }));
+      // The texts are independent, so a long explanation is translated in a few parallel
+      // chunks: much faster than one long reply, and still one request for the browser.
+      const chunks: (typeof safeItems)[] = [];
+      for (let start = 0; start < safeItems.length; start += TRANSLATE_CHUNK_SIZE) {
+        chunks.push(safeItems.slice(start, start + TRANSLATE_CHUNK_SIZE));
+      }
+      const replies = await Promise.all(
+        chunks.map((chunk) =>
+          ai.generateJson({
+            task: 'translate',
+            systemInstruction: translationInstruction(language),
+            parts: translationParts(chunk),
+            schema: translationSchema,
+            temperature: TEMPERATURE.translate,
+          }),
+        ),
+      );
+      // Map back by id; anything missing or empty keeps its original text, so the result
+      // always has exactly the requested ids and nothing else.
+      const translated = new Map(
+        replies.flatMap((reply) => reply.items).map((item) => [item.id, item.text]),
+      );
+      return {
+        items: safeItems.map((item) => {
+          const text = clip(translated.get(item.id) ?? '', LIMITS.maxTranslateItemChars);
+          return { id: item.id, text: text.length > 0 ? text : item.text };
+        }),
+      };
     },
 
     async extract({ mimeType, data }) {

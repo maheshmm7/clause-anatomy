@@ -122,6 +122,7 @@ export const en = {
   workingReading: 'Reading your paper…',
   workingProtecting: 'Hiding private numbers…',
   workingExplaining: 'Finding what matters to you…',
+  workingTranslating: 'Translating the explanation…',
   workingHint: 'Long papers can take up to a minute.',
   cancel: 'Cancel',
 

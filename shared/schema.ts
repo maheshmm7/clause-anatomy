@@ -237,6 +237,51 @@ export const extractRequestSchema = z.strictObject({
     .regex(/^[A-Za-z0-9+/]+={0,2}$/, 'data must be base64'),
 });
 
+/**
+ * Translating an explanation that was already written: only its plain-language texts
+ * travel (never the paper), each with a stable id so the result maps back exactly.
+ */
+const translateItemSchema = z.strictObject({
+  id: z.string().regex(/^[A-Za-z0-9._-]{1,80}$/, 'id must be a simple path'),
+  text: z.string().max(LIMITS.maxTranslateItemChars),
+});
+
+export const translateRequestSchema = z
+  .strictObject({
+    language: languageSchema,
+    items: z.array(translateItemSchema).min(1).max(LIMITS.maxTranslateItems),
+  })
+  .refine(
+    (request) => new Set(request.items.map((item) => item.id)).size === request.items.length,
+    {
+      message: 'item ids must be unique',
+    },
+  )
+  .refine(
+    (request) =>
+      request.items.reduce((total, item) => total + item.text.length, 0) <=
+      LIMITS.maxTranslateTotalChars,
+    { message: 'too much text to translate' },
+  );
+
+/** What the model returns when translating (validated again before use). */
+export const translationSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.string().describe('The id of the input text, unchanged.'),
+        text: z.string().describe('The translated text.'),
+      }),
+    )
+    .describe('Every input text, translated, each id exactly once.'),
+});
+
+export const translateResultSchema = z.object({
+  items: z.array(z.object({ id: z.string(), text: z.string() })),
+});
+
+export type TranslateRequest = z.infer<typeof translateRequestSchema>;
+export type TranslateResult = z.infer<typeof translateResultSchema>;
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;
 export type AskRequest = z.infer<typeof askRequestSchema>;
 export type ExtractRequest = z.infer<typeof extractRequestSchema>;

@@ -4,7 +4,7 @@ export type AiPart = { text: string } | { inlineData: { mimeType: string; data: 
 
 export interface GenerateJsonRequest<T> {
   /** Short task name, used only for logs. */
-  task: 'analyze' | 'extract' | 'answer';
+  task: 'analyze' | 'extract' | 'answer' | 'translate';
   systemInstruction: string;
   parts: AiPart[];
   /** Zod schema: constrains the model output and validates the reply. */

@@ -7,6 +7,7 @@ import { ApiClientError, api } from '../api/client';
 import { ReadError, readDocumentFile } from '../features/input/readers';
 import type { MessageKey } from '../i18n/messages/en';
 import { sha256Hex } from '../lib/browser';
+import { applyTexts, collectTexts } from '../lib/translatable';
 import { SAMPLES, type SampleId } from '../samples';
 import {
   flowReducer,
@@ -93,22 +94,49 @@ export function useDocumentFlow({
     }
   }, []);
 
-  /** Explains a paper already in the library again, in `language`. */
+  /**
+   * Shows a paper already in the library in another language. The paper is never
+   * analysed again: a language seen before is reused instantly, an example uses the
+   * translation it ships with, and otherwise only the explanation texts are translated
+   * (from the original analysis, so every language shows exactly the same clauses).
+   */
   const explainAgain = useCallback(
-    (docId: string, loaded: LoadedDocument, language: ExplanationLanguage) =>
-      run(async (signal) => {
-        dispatch({ type: 'progress', step: 'explaining' });
+    (docId: string, loaded: LoadedDocument, language: ExplanationLanguage) => {
+      const sourceLanguage = loaded.sourceLanguage ?? loaded.analysis.language;
+      const known: Partial<Record<ExplanationLanguage, AnalysisResult>> = {
+        ...loaded.translations,
+        [loaded.analysis.language]: loaded.analysis,
+      };
+      const withAnalysis = (analysis: AnalysisResult): LoadedDocument => ({
+        ...loaded,
+        analysis,
+        languageFallback: false,
+        sourceLanguage,
+        translations: { ...known, [language]: analysis },
+      });
+
+      const cached = known[language];
+      if (cached) {
+        onReplacedRef.current?.(docId, withAnalysis(cached));
+        return Promise.resolve();
+      }
+
+      return run(async (signal) => {
+        dispatch({ type: 'progress', step: 'translating' });
         const sample = loaded.sampleId
           ? SAMPLES.find((candidate) => candidate.id === loaded.sampleId)
           : undefined;
-        const precomputed = sample ? (await sample.load()).analyses[language] : undefined;
-        const analysis =
-          precomputed ?? (await api.analyze({ text: loaded.text, language }, signal));
-        const next: LoadedDocument = { ...loaded, analysis, languageFallback: false };
-        onReplacedRef.current?.(docId, next);
+        let analysis = sample ? (await sample.load()).analyses[language] : undefined;
+        if (!analysis) {
+          const source = known[sourceLanguage] ?? loaded.analysis;
+          const { items } = await api.translate({ language, items: collectTexts(source) }, signal);
+          analysis = applyTexts(source, items, language);
+        }
+        onReplacedRef.current?.(docId, withAnalysis(analysis));
         // The paper stays in place; nothing new is added to the library.
         return null;
-      }),
+      });
+    },
     [run],
   );
 

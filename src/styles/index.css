@@ -788,6 +788,13 @@ textarea:disabled {
   line-height: 1.6;
   text-transform: uppercase;
   white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Long labels (e.g. Telugu at the largest text size) wrap instead of overflowing. */
+.badge {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .badge--neutral {
@@ -919,6 +926,8 @@ textarea:disabled {
 .segmented__option,
 .role,
 .scenario {
+  min-width: 0;
+  overflow-wrap: anywhere;
   position: relative;
   display: flex;
 }
@@ -1887,8 +1896,9 @@ textarea:disabled {
 }
 
 .statline {
-  display: inline-grid;
-  grid-template-columns: repeat(3, auto);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 40rem;
   margin-top: 1.25rem;
   border: var(--b) solid var(--line);
   background: var(--surface);
@@ -1904,6 +1914,7 @@ textarea:disabled {
 }
 
 .statline dt {
+  overflow-wrap: anywhere;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -2000,6 +2011,7 @@ textarea:disabled {
 
 .home-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -2041,6 +2053,7 @@ textarea:disabled {
 
 .site-header__inner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
   max-width: 80rem;
@@ -2102,6 +2115,8 @@ textarea:disabled {
 
 .site-header__actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
   margin-left: auto;
@@ -2124,6 +2139,7 @@ textarea:disabled {
 
 .hero__inner {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(2rem, 5vw, 4rem);
   align-items: center;
   max-width: 80rem;
@@ -3023,6 +3039,7 @@ textarea:disabled {
 
 .library__item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -3068,6 +3085,8 @@ textarea:disabled {
 .library__actions {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
+  margin-left: auto;
   gap: 0.375rem;
 }
 
@@ -3597,6 +3616,7 @@ textarea:disabled {
 
 .clauses-layout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -3720,8 +3740,14 @@ textarea:disabled {
 
 .pager {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.pager .btn {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .clause {
@@ -4122,6 +4148,7 @@ textarea:disabled {
 
 .reader {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -4453,6 +4480,7 @@ textarea:disabled {
 
 .whatif {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }

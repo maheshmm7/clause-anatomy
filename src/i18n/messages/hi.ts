@@ -116,6 +116,7 @@ export const hi: Messages = {
   workingReading: 'आपका कागज़ पढ़ा जा रहा है…',
   workingProtecting: 'निजी नंबर छिपाए जा रहे हैं…',
   workingExplaining: 'आपके लिए ज़रूरी बातें ढूँढी जा रही हैं…',
+  workingTranslating: 'समझ का अनुवाद हो रहा है…',
   workingHint: 'लंबे कागज़ों में एक मिनट तक लग सकता है।',
   cancel: 'रद्द करें',
 

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hi } from '../i18n/messages/hi';
 import { te } from '../i18n/messages/te';
+import { collectTexts } from '../lib/translatable';
 import { RENTAL_SAMPLE } from '../samples/rental';
 import { SettingsProvider } from '../settings/SettingsProvider';
 import { expectNoAxeViolations, stubFetch, type FakeRoute } from '../test/helpers';
@@ -454,6 +455,45 @@ describe('dashboard journey with the rent agreement example', { timeout: 30_000 
 
     // The reader's flag survived the change.
     expect(await screen.findByText(hi.flaggedForLawyer)).toBeVisible();
+  });
+
+  it('translates an uploaded paper without analysing it again, and switches back instantly', async () => {
+    const english = RENTAL_SAMPLE.analyses.en!;
+    const tamil = collectTexts(english).map((item) => ({
+      id: item.id,
+      text: `தமிழ்: ${item.text}`,
+    }));
+    const { user, calls } = await renderApp({
+      aiAvailable: true,
+      routes: {
+        '/api/analyze': { body: english },
+        '/api/translate': { body: { items: tamil } },
+      },
+    });
+    await user.click(await screen.findByRole('button', { name: /Paste text/ }));
+    await user.click(screen.getByLabelText('Paste the words of your paper here'));
+    await user.paste('The Lessee shall pay a monthly rent of Rs. 22,000 on or before the 5th day.');
+    await user.click(screen.getByRole('button', { name: /Explain this paper/ }));
+    await screen.findByRole('heading', { level: 1, name: RENTAL_TITLE });
+
+    await user.click(screen.getByRole('combobox', { name: 'Explain in' }));
+    await user.click(screen.getByRole('option', { name: /தமிழ்/ }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: `தமிழ்: ${RENTAL_TITLE}` }),
+    ).toBeVisible();
+
+    // One analysis, one translation: the paper itself was never sent again.
+    expect(calls.filter((call) => call.path === '/api/analyze')).toHaveLength(1);
+    const translation = calls.find((call) => call.path === '/api/translate');
+    expect(translation?.body).toMatchObject({ language: 'ta' });
+    expect(JSON.stringify(translation?.body)).not.toContain(english.points[0]!.quote);
+
+    // Back to English: instant, from memory, no new request.
+    const before = calls.length;
+    await user.click(screen.getByRole('combobox', { name: 'Explain in' }));
+    await user.click(screen.getByRole('option', { name: /English/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: RENTAL_TITLE })).toBeVisible();
+    expect(calls.length).toBe(before);
   });
 
   it('keeps the papers of this tab through a page refresh', async () => {

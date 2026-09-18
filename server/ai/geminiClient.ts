@@ -9,6 +9,8 @@ export interface GeminiClientOptions {
   /** Used when the main model is overloaded or rate limited (e.g. a stable older model). */
   fallbackModel?: string | null;
   timeoutMs: number;
+  /** Pause before retrying a model that said "too many requests" (default 2 s). */
+  retryDelayMs?: number;
   /** Injected for tests; defaults to the real SDK. */
   sdk?: Pick<GoogleGenAI, 'models'>;
   logger?: Pick<Console, 'warn'>;
@@ -18,6 +20,10 @@ export interface GeminiClientOptions {
 const MAX_ATTEMPTS = 2;
 
 class InvalidModelOutput extends Error {}
+
+function isRateLimited(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 429;
+}
 
 /** How long the main model may take before a request moves to the fallback model. */
 const PRIMARY_MODEL_BUDGET_MS = 45_000;
@@ -42,6 +48,19 @@ function isOverloaded(error: unknown): boolean {
 export function supportsThinkingLevel(model: string): boolean {
   const generation = /^gemini-(\d+)/.exec(model)?.[1];
   return generation !== undefined && Number(generation) >= 3;
+}
+
+/**
+ * Thinking settings per model. Gemini 3 uses a low thinking level; Gemini 2.5 Flash
+ * models think by default, which makes long structured replies (like translating a
+ * whole explanation) very slow, so thinking is switched off for them.
+ */
+export function thinkingConfigFor(
+  model: string,
+): { thinkingLevel: ThinkingLevel } | { thinkingBudget: number } | undefined {
+  if (supportsThinkingLevel(model)) return { thinkingLevel: ThinkingLevel.LOW };
+  if (/^gemini-2\.5-flash/.test(model)) return { thinkingBudget: 0 };
+  return undefined;
 }
 
 /**
@@ -105,9 +124,7 @@ export function createGeminiClient(options: GeminiClientOptions): AiClient {
         temperature: request.temperature,
         responseMimeType: 'application/json',
         ...(useSchema ? { responseJsonSchema: toGeminiJsonSchema(request.schema) } : {}),
-        ...(supportsThinkingLevel(model)
-          ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
-          : {}),
+        ...(thinkingConfigFor(model) ? { thinkingConfig: thinkingConfigFor(model) } : {}),
         abortSignal: AbortSignal.timeout(timeoutMs),
       },
     });
@@ -141,6 +158,7 @@ export function createGeminiClient(options: GeminiClientOptions): AiClient {
 
       for (const { model, timeoutMs } of plan) {
         let useSchema = true;
+        let waitedForRateLimit = false;
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
           try {
             return await callModel(model, request, useSchema, timeoutMs);
@@ -148,6 +166,13 @@ export function createGeminiClient(options: GeminiClientOptions): AiClient {
             lastError = error;
             if (useSchema && isSchemaRejection(error)) {
               useSchema = false;
+              continue;
+            }
+            // Free-tier keys have per-minute limits: a short pause usually clears them.
+            if (isRateLimited(error) && !waitedForRateLimit) {
+              waitedForRateLimit = true;
+              await new Promise((resolve) => setTimeout(resolve, options.retryDelayMs ?? 2_000));
+              attempt -= 1;
               continue;
             }
             if (!(error instanceof InvalidModelOutput)) break;
