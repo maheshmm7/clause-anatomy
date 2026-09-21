@@ -128,8 +128,6 @@ export const hi: Messages = {
   error_ai_unavailable: 'AI अभी उपलब्ध नहीं है। बाद में कोशिश करें या उदाहरण देखें।',
   error_ai_busy: 'AI अभी व्यस्त है। एक मिनट बाद फिर कोशिश करें।',
   error_ai_bad_response: 'AI का जवाब साफ़ नहीं था। कृपया फिर से कोशिश करें।',
-  error_ai_key_invalid:
-    'यह Gemini API key स्वीकार नहीं हुई। सेटिंग्स में इसे जाँचें या दूसरी key डालें।',
   error_not_found: 'कुछ नहीं मिला। कृपया फिर से कोशिश करें।',
   error_internal: 'कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।',
   error_network: 'जुड़ नहीं पाए। अपना इंटरनेट देखें और फिर कोशिश करें।',
@@ -352,18 +350,6 @@ export const hi: Messages = {
   settingsIntro: 'सिर्फ़ इसी डिवाइस पर सेव होती हैं।',
   settingsLanguageSection: 'भाषा',
   settingsDisplaySection: 'दिखावट',
-  settingsKeySection: 'आपकी Gemini API key',
-  apiKeyIntro:
-    'ज़रूरी नहीं। अगर ऐप की key व्यस्त हो या खत्म हो जाए और लाइव समझाना बंद हो जाए, तो यहाँ अपनी मुफ़्त key डालें।',
-  apiKeyLabel: 'Gemini API key',
-  apiKeySave: 'key सेव करें',
-  apiKeyRemove: 'key हटाएँ',
-  apiKeyActive: 'आपकी key चालू है। इस टैब में लाइव AI इसी का इस्तेमाल करता है।',
-  apiKeyInvalid: 'यह Gemini API key जैसी नहीं लगती। जाँचें कि पूरी key कॉपी हुई है।',
-  apiKeyPrivacy:
-    'यह सिर्फ़ इसी ब्राउज़र टैब में रहती है और टैब बंद करते ही मिट जाती है। हर अनुरोध के लिए यह हमारे सर्वर से होकर Google तक जाती है, और कभी सेव या लॉग नहीं होती।',
-  apiKeyGet: 'Google AI Studio पर मुफ़्त key पाएँ',
-  useOwnKey: 'अपनी Gemini key इस्तेमाल करें',
   collapseSidebar: 'साइडबार छोटा करें',
   expandSidebar: 'साइडबार बड़ा करें',
   actionOpenSettings: 'सेटिंग्स खोलें',

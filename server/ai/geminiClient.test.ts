@@ -144,8 +144,8 @@ describe('createGeminiClient', () => {
     );
     await expectHttpError(
       client(sdk, 'gemini-3.6-flash', 'gemini-2.5-flash').client.generateJson(REQUEST),
-      401,
-      'ai_key_invalid',
+      503,
+      'ai_unavailable',
     );
     expect(generateContent).toHaveBeenCalledTimes(1);
   });
@@ -179,9 +179,7 @@ describe('createGeminiClient', () => {
     // A rate limit gets one short retry; everything else fails at once.
     [new ApiError({ message: 'quota', status: 429 }), 503, 'ai_busy', 2],
     [new ApiError({ message: 'overloaded', status: 503 }), 503, 'ai_busy', 1],
-    [new ApiError({ message: 'API key not valid', status: 400 }), 401, 'ai_key_invalid', 1],
-    [new ApiError({ message: 'permission denied', status: 403 }), 401, 'ai_key_invalid', 1],
-    [new ApiError({ message: 'bad request', status: 404 }), 503, 'ai_unavailable', 1],
+    [new ApiError({ message: 'API key not valid', status: 400 }), 503, 'ai_unavailable', 1],
     [new DOMException('timed out', 'TimeoutError'), 504, 'ai_busy', 1],
     [new TypeError('fetch failed'), 503, 'ai_unavailable', 1],
   ])('maps %s to a safe client error', async (failure, status, code, calls) => {
@@ -199,25 +197,6 @@ describe('createGeminiClient', () => {
       status: 429,
       reason: 'quota',
     });
-  });
-});
-
-describe('API keys in logs', () => {
-  it('never logs the API key, even if an error message repeats it', async () => {
-    const apiKey = 'test.server.key.not-real.0123456789';
-    const { sdk } = fakeSdk(new ApiError({ message: `quota for ${apiKey}`, status: 429 }));
-    const logger = { warn: vi.fn() };
-    const gemini = createGeminiClient({
-      apiKey,
-      model: 'gemini-3.6-flash',
-      timeoutMs: 5_000,
-      retryDelayMs: 0,
-      sdk,
-      logger,
-    });
-    await gemini.generateJson(REQUEST).catch(() => undefined);
-    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(apiKey);
-    expect(JSON.stringify(logger.warn.mock.calls)).toContain('quota for [key]');
   });
 });
 

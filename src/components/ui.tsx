@@ -181,16 +181,6 @@ export function Spinner() {
   return <span className="spinner" aria-hidden="true" />;
 }
 
-/** Offers the reader's own Gemini key when live AI is busy, used up or refused. */
-export function OwnKeyButton({ onClick }: { onClick: () => void }) {
-  const { t } = useI18n();
-  return (
-    <button type="button" className="btn btn--small notice__action" onClick={onClick}>
-      <Icon name="key" /> {t('useOwnKey')}
-    </button>
-  );
-}
-
 export function ExternalLink({
   href,
   children,

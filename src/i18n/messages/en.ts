@@ -136,8 +136,6 @@ export const en = {
     'The AI is not available right now. Please try again later or use an example.',
   error_ai_busy: 'The AI is busy. Please try again in a minute.',
   error_ai_bad_response: 'The AI gave an unclear answer. Please try again.',
-  error_ai_key_invalid:
-    'This Gemini API key was not accepted. Check it in Settings, or add a different key.',
   error_not_found: 'Something was not found. Please try again.',
   error_internal: 'Something went wrong. Please try again.',
   error_network: 'Could not connect. Check your internet and try again.',
@@ -372,18 +370,6 @@ export const en = {
   settingsIntro: 'Saved only on this device.',
   settingsLanguageSection: 'Language',
   settingsDisplaySection: 'Display',
-  settingsKeySection: 'Your Gemini API key',
-  apiKeyIntro:
-    'Optional. If live explanations stop working because the app’s key is busy or used up, add your own free key here.',
-  apiKeyLabel: 'Gemini API key',
-  apiKeySave: 'Save key',
-  apiKeyRemove: 'Remove key',
-  apiKeyActive: 'Your key is active. Live AI uses it in this tab.',
-  apiKeyInvalid: 'That does not look like a Gemini API key. Check that you copied all of it.',
-  apiKeyPrivacy:
-    'Kept only in this browser tab and forgotten when you close it. It passes through our server to Google for each request and is never stored or logged.',
-  apiKeyGet: 'Get a free key at Google AI Studio',
-  useOwnKey: 'Use your own Gemini key',
   collapseSidebar: 'Collapse sidebar',
   expandSidebar: 'Expand sidebar',
   actionOpenSettings: 'Open settings',

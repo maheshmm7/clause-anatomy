@@ -424,7 +424,6 @@ textarea::-webkit-scrollbar-thumb {
 
 input[type='text'],
 input[type='search'],
-input[type='password'],
 textarea {
   width: 100%;
   min-height: 2.75rem;
@@ -1026,42 +1025,6 @@ textarea:disabled {
 .settings-field {
   display: grid;
   gap: 0.375rem;
-}
-
-.api-key {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.api-key__status:empty {
-  display: none;
-}
-
-.api-key__status {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.625rem;
-  border: var(--b) solid var(--line);
-  background: var(--surface-2);
-  font-weight: 600;
-}
-
-.api-key__error {
-  padding: 0.375rem 0.625rem;
-  border: var(--b) solid var(--line);
-  background: var(--red-soft);
-  font-weight: 600;
-}
-
-.api-key__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.notice__action {
-  margin-top: 0.5rem;
 }
 
 /* Compact selects sit beside buttons in a view header. */

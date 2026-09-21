@@ -128,8 +128,6 @@ export const te: Messages = {
   error_ai_unavailable: 'ప్రస్తుతం AI అందుబాటులో లేదు. తర్వాత ప్రయత్నించండి లేదా ఉదాహరణ చూడండి.',
   error_ai_busy: 'AI బిజీగా ఉంది. ఒక నిమిషం తర్వాత మళ్ళీ ప్రయత్నించండి.',
   error_ai_bad_response: 'AI సమాధానం స్పష్టంగా లేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.',
-  error_ai_key_invalid:
-    'ఈ Gemini API key అంగీకరించబడలేదు. సెట్టింగ్స్‌లో దాన్ని తనిఖీ చేయండి లేదా వేరే key జోడించండి.',
   error_not_found: 'ఏదో దొరకలేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.',
   error_internal: 'ఏదో తప్పు జరిగింది. దయచేసి మళ్ళీ ప్రయత్నించండి.',
   error_network: 'కనెక్ట్ కాలేదు. మీ ఇంటర్నెట్ చూసి మళ్ళీ ప్రయత్నించండి.',
@@ -355,18 +353,6 @@ export const te: Messages = {
   settingsIntro: 'ఈ పరికరంలో మాత్రమే సేవ్ అవుతాయి.',
   settingsLanguageSection: 'భాష',
   settingsDisplaySection: 'ప్రదర్శన',
-  settingsKeySection: 'మీ Gemini API key',
-  apiKeyIntro:
-    'ఐచ్ఛికం. యాప్ key బిజీగా ఉండి లేదా అయిపోయి లైవ్ వివరణ ఆగిపోతే, మీ ఉచిత key ఇక్కడ జోడించండి.',
-  apiKeyLabel: 'Gemini API key',
-  apiKeySave: 'key సేవ్ చేయండి',
-  apiKeyRemove: 'key తీసివేయండి',
-  apiKeyActive: 'మీ key పనిచేస్తోంది. ఈ ట్యాబ్‌లో లైవ్ AI దాన్నే ఉపయోగిస్తుంది.',
-  apiKeyInvalid: 'ఇది Gemini API key లాగా లేదు. మొత్తం key కాపీ చేశారో చూడండి.',
-  apiKeyPrivacy:
-    'ఇది ఈ బ్రౌజర్ ట్యాబ్‌లో మాత్రమే ఉంటుంది, ట్యాబ్ మూసివేయగానే మరచిపోతుంది. ప్రతి అభ్యర్థనకు ఇది మా సర్వర్ ద్వారా Google కి వెళ్తుంది, ఎప్పుడూ సేవ్ లేదా లాగ్ చేయబడదు.',
-  apiKeyGet: 'Google AI Studio లో ఉచిత key పొందండి',
-  useOwnKey: 'మీ సొంత Gemini key ఉపయోగించండి',
   collapseSidebar: 'సైడ్‌బార్ చిన్నదిగా చేయండి',
   expandSidebar: 'సైడ్‌బార్ పెద్దదిగా చేయండి',
   actionOpenSettings: 'సెట్టింగ్‌లు తెరవండి',

@@ -196,83 +196,10 @@ describe('workspace home', () => {
     await user.paste('The Lessee shall pay a monthly rent of Rs. 22,000 on or before the 5th day.');
     await user.click(screen.getByRole('button', { name: /Explain this paper/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The AI is busy');
-  });
-
-  it("lets the reader add their own Gemini key when the app's key is busy", async () => {
-    const KEY = 'test.reader.key.not-real.0123456789';
-    const { user, calls, headers } = await renderApp({
-      aiAvailable: true,
-      routes: {
-        '/api/analyze': [
-          { status: 503, body: { error: { code: 'ai_busy', message: 'busy' } } },
-          { body: RENTAL_SAMPLE.analyses.en },
-        ],
-      },
-    });
-    await user.click(await screen.findByRole('button', { name: /Paste text/ }));
-    await user.click(screen.getByLabelText('Paste the words of your paper here'));
-    await user.paste(RENTAL_SAMPLE.text);
-    await user.click(screen.getByRole('button', { name: /Explain this paper/ }));
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('The AI is busy');
     // A failed explanation keeps what the reader pasted.
     expect(screen.getByLabelText('Paste the words of your paper here')).toHaveValue(
-      RENTAL_SAMPLE.text,
+      'The Lessee shall pay a monthly rent of Rs. 22,000 on or before the 5th day.',
     );
-
-    // The error offers the reader's own key, which opens settings.
-    await user.click(within(alert).getByRole('button', { name: 'Use your own Gemini key' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }));
-    const input = dialog.getByLabelText('Gemini API key');
-    expect(input).toHaveAttribute('type', 'password');
-    // It opens right at the key field.
-    expect(input).toHaveFocus();
-
-    await user.type(input, 'not-a-key');
-    await user.click(dialog.getByRole('button', { name: 'Save key' }));
-    expect(dialog.getByRole('alert')).toHaveTextContent('does not look like a Gemini API key');
-    expect(input).toHaveAttribute('aria-invalid', 'true');
-
-    await user.clear(input);
-    await user.type(input, KEY);
-    await user.click(dialog.getByRole('button', { name: 'Save key' }));
-    expect(dialog.getByRole('status')).toHaveTextContent('Your key is active');
-    // The saved key is never shown again.
-    expect(input).toHaveValue('');
-    await expectNoAxeViolations(screen.getByRole('dialog'));
-    await user.click(dialog.getAllByRole('button', { name: 'Close' })[1]!);
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-
-    // Trying again uses the reader's key.
-    await user.click(screen.getByRole('button', { name: /Explain this paper/ }));
-    expect(await screen.findByRole('heading', { level: 1, name: RENTAL_TITLE })).toBeVisible();
-    const analyzeCalls = calls.flatMap((call, index) =>
-      call.path === '/api/analyze' ? [headers[index]] : [],
-    );
-    expect(analyzeCalls[0]).not.toHaveProperty('x-gemini-api-key');
-    expect(analyzeCalls[1]).toMatchObject({ 'x-gemini-api-key': KEY });
-
-    // And it can be removed again.
-    await user.click(screen.getAllByRole('button', { name: 'Settings' })[0]!);
-    const again = within(await screen.findByRole('dialog', { name: 'Settings' }));
-    await user.click(again.getByRole('button', { name: 'Remove key' }));
-    expect(again.queryByText(/Your key is active/)).not.toBeInTheDocument();
-    expect(window.sessionStorage.getItem('clause-anatomy:geminiKey')).toBeNull();
-  });
-
-  it('turns live AI on with a saved key even when the server has none', async () => {
-    const { user } = await renderApp({ aiAvailable: false });
-    const offline = await screen.findByText(/Live explanations are not available/);
-    const notice = offline.closest('.notice') as HTMLElement;
-    await user.click(within(notice).getByRole('button', { name: 'Use your own Gemini key' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }));
-    await user.type(dialog.getByLabelText('Gemini API key'), 'test.reader.key.not-real.0123456789');
-    await user.click(dialog.getByRole('button', { name: 'Save key' }));
-    await user.click(dialog.getAllByRole('button', { name: 'Close' })[1]!);
-    await waitFor(() =>
-      expect(screen.queryByText(/Live explanations are not available/)).not.toBeInTheDocument(),
-    );
-    expect(screen.getByRole('button', { name: /Paste text/ })).toBeEnabled();
   });
 
   it('keeps every preference in one settings dialog', async () => {

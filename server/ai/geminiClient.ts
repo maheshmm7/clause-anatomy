@@ -70,17 +70,7 @@ export function thinkingConfigFor(
  * is also a 400, but retrying cannot help, so it is excluded.)
  */
 function isSchemaRejection(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 400 && !isKeyRejection(error);
-}
-
-/** The API key itself was refused (wrong, revoked or without access to the model). */
-function isKeyRejection(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    (error.status === 401 ||
-      error.status === 403 ||
-      (error.status === 400 && /api[ _]?key/i.test(error.message)))
-  );
+  return error instanceof ApiError && error.status === 400 && !/api key/i.test(error.message);
 }
 
 /** Maps SDK / network failures to safe client-facing errors. Details go to server logs only. */
@@ -88,9 +78,6 @@ function toHttpError(error: unknown): HttpError {
   if (error instanceof HttpError) return error;
   if (isTimeout(error)) {
     return new HttpError(504, 'ai_busy', 'The AI took too long to respond. Please try again.');
-  }
-  if (isKeyRejection(error)) {
-    return new HttpError(401, 'ai_key_invalid', 'The Gemini API key was not accepted.');
   }
   if (error instanceof ApiError) {
     if (error.status === 429 || error.status >= 500) {
@@ -198,11 +185,7 @@ export function createGeminiClient(options: GeminiClientOptions): AiClient {
       }
 
       const status = lastError instanceof ApiError ? lastError.status : undefined;
-      // The key never appears in logs, even if an error message were to repeat it.
-      const reason =
-        lastError instanceof Error
-          ? lastError.message.split(options.apiKey).join('[key]').slice(0, 200)
-          : 'unknown';
+      const reason = lastError instanceof Error ? lastError.message.slice(0, 200) : 'unknown';
       // Never log prompts or documents — only the task, status and a short reason.
       logger.warn(`[ai] ${request.task} failed`, { status, reason });
       throw toHttpError(lastError);

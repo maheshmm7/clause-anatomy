@@ -31,7 +31,6 @@ And around the core:
 - **Next steps**: personal checklist, important dates (**add to calendar** as `.ics`), and a **lawyer-ready brief** (copy / share on WhatsApp / print) that includes what the reader did not understand and questions the paper could not answer.
 - **Ask about your paper**: typed or **spoken** questions; answers are labelled _from your paper_, _general information_ or _needs a lawyer_, with verified quotes.
 - **Notices & urgent papers**: legal notices get a _Who sent it / What they claim / What they want / By when / If ignored_ summary. A deterministic safety net raises urgency for warrants, summons or eviction (English, Hindi, Telugu) and shows **free legal aid (15100)** with tap-to-call.
-- **Your own Gemini key (optional)**: if the app's key is busy or used up, the error offers _Use your own Gemini key_, which opens Settings at the key field. The key stays in that browser tab only and is used just for that reader's requests (see [SECURITY.md](SECURITY.md)).
 - **Honest scope**: papers that are not legal documents are recognised and explained as such; court papers are explained but pointed to a lawyer.
 
 ### A complete product, not a demo page
@@ -154,14 +153,14 @@ npm start                   # http://localhost:8787
 
 ### Environment variables
 
-| Variable                | Required    | Default            | Purpose                                                                                                  |
-| ----------------------- | ----------- | ------------------ | -------------------------------------------------------------------------------------------------------- |
-| `GEMINI_API_KEY`        | for live AI | —                  | Gemini API key (server only, never sent to the browser). Readers can also add their own key in Settings. |
-| `GEMINI_MODEL`          | no          | `gemini-3.6-flash` | Any stable Gemini model with JSON output and image understanding                                         |
-| `GEMINI_FALLBACK_MODEL` | no          | `gemini-2.5-flash` | Used automatically when the main model is overloaded (`none` disables)                                   |
-| `PORT`                  | no          | `8787`             | Port for `npm start`                                                                                     |
-| `RATE_LIMIT_MAX`        | no          | `30`               | AI requests per client IP per 10 minutes                                                                 |
-| `AI_TIMEOUT_MS`         | no          | `120000`           | Hard timeout for each AI call                                                                            |
+| Variable                | Required    | Default            | Purpose                                                                |
+| ----------------------- | ----------- | ------------------ | ---------------------------------------------------------------------- |
+| `GEMINI_API_KEY`        | for live AI | —                  | Gemini API key (server only, never sent to the browser).               |
+| `GEMINI_MODEL`          | no          | `gemini-3.6-flash` | Any stable Gemini model with JSON output and image understanding       |
+| `GEMINI_FALLBACK_MODEL` | no          | `gemini-2.5-flash` | Used automatically when the main model is overloaded (`none` disables) |
+| `PORT`                  | no          | `8787`             | Port for `npm start`                                                   |
+| `RATE_LIMIT_MAX`        | no          | `30`               | AI requests per client IP per 10 minutes                               |
+| `AI_TIMEOUT_MS`         | no          | `120000`           | Hard timeout for each AI call                                          |
 
 ### Quality commands
 
@@ -193,7 +192,7 @@ The app is a static front-end plus one API. On **Vercel**, `vercel.json` builds 
 - The session library (up to 6 papers), notes and flags stay inside the open browser tab (kept across a refresh in `sessionStorage`) and are cleared when the tab is closed — by design, nothing reaches a server.
 - Clause matching in _Compare_ works best for papers of the same kind explained in the same language.
 - Rate limiting is in-memory per server instance; a multi-instance deployment should use a shared store.
-- The Gemini free tier has a small daily quota; once it is used up, live analysis and translation pause until the next day (the built-in examples keep working). A reader can add their own free key in **Settings → Your Gemini API key** to carry on; it is used only for that reader's requests. A deployment for real users should enable billing on the server key.
+- The Gemini free tier has a small daily quota; once it is used up, live analysis and translation pause until the next day (the built-in examples keep working). A deployment for real users should enable billing.
 - Interface translations (Hindi, Telugu) were written for this project and should be reviewed by native speakers before wide release.
 
 ## 9. Responsible AI

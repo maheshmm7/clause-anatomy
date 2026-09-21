@@ -27,26 +27,6 @@ describe('api client', () => {
     });
   });
 
-  it("sends the reader's own key only when one is saved", async () => {
-    const { headers } = stubFetch({
-      '/api/ask': { body: { basis: 'none', answer: 'No', quotes: [] } },
-    });
-    const body = { text: 'document text '.repeat(5), question: 'Why?', language: 'en' } as const;
-
-    await api.ask(body);
-    expect(headers[0]).not.toHaveProperty('x-gemini-api-key');
-
-    window.sessionStorage.setItem(
-      'clause-anatomy:geminiKey',
-      'test.reader.key.not-real.0123456789',
-    );
-    await api.ask(body);
-    expect(headers[1]).toMatchObject({
-      'Content-Type': 'application/json',
-      'x-gemini-api-key': 'test.reader.key.not-real.0123456789',
-    });
-  });
-
   it('maps server error codes', async () => {
     stubFetch({
       '/api/analyze': {

@@ -4,12 +4,11 @@ import type { FlowError, PendingUpload } from '../../app/flow';
 import { useWorkspace } from '../../app/WorkspaceContext';
 import { ExplanationLanguageSelect } from '../../components/controls';
 import { Icon, type IconName } from '../../components/Icon';
-import { Notice, OwnKeyButton, Panel } from '../../components/ui';
+import { Notice, Panel } from '../../components/ui';
 import { useFocusOnMount } from '../../hooks/dom';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/messages/en';
 import { needsAttention } from '../../lib/perspective';
-import { KEY_FIXABLE_ERRORS } from '../../lib/userKey';
 import { SAMPLES, type SampleId } from '../../samples';
 import { ConsentPanel } from './ConsentPanel';
 
@@ -30,8 +29,6 @@ export interface HomeViewProps {
   onLoadSample: (id: SampleId) => void;
   onConfirmConsent: (pending: PendingUpload) => void;
   onCancelConsent: () => void;
-  /** Opens settings at the field where a reader can add their own Gemini key. */
-  onOpenSettings: () => void;
 }
 
 interface TileProps {
@@ -154,17 +151,9 @@ export function HomeView(props: HomeViewProps) {
       </header>
 
       {props.error && (
-        <Notice tone="danger" urgent title={t(props.error.key, props.error.values)}>
-          {KEY_FIXABLE_ERRORS.has(props.error.key) && (
-            <OwnKeyButton onClick={props.onOpenSettings} />
-          )}
-        </Notice>
+        <Notice tone="danger" urgent title={t(props.error.key, props.error.values)} />
       )}
-      {liveDisabled && (
-        <Notice tone="warning" title={t('aiOffline')}>
-          <OwnKeyButton onClick={props.onOpenSettings} />
-        </Notice>
-      )}
+      {liveDisabled && <Notice tone="warning" title={t('aiOffline')} />}
 
       <div className="home-grid">
         <Panel number="00A" title={t('inputTitle')} icon="plus" className="panel--intake">

@@ -102,19 +102,6 @@ test.describe('production server security', () => {
     });
     expect(missingAi.status()).toBe(503);
 
-    // A reader's own key must be shaped like a key; it is refused before any AI call
-    // and never repeated back.
-    const badKey = await request.post('/api/ask', {
-      headers: { 'x-gemini-api-key': '<not a key>' },
-      data: {
-        text: 'The Lessee shall pay a monthly rent of Rs. 22,000.',
-        question: 'Rent?',
-        language: 'en',
-      },
-    });
-    expect(badKey.status()).toBe(401);
-    expect(await badKey.text()).not.toContain('<not a key>');
-
     const unknown = await request.get('/api/../../etc/passwd');
     expect([200, 404]).toContain(unknown.status());
     expect(await unknown.text()).not.toContain('root:');

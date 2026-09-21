@@ -12,8 +12,6 @@ import type {
   TranslateResult,
 } from '../../shared/schema';
 import type * as SchemaModule from '../../shared/schema';
-import { USER_KEY_HEADER } from '../../shared/limits';
-import { readUserKey } from '../lib/userKey';
 
 type Schemas = typeof SchemaModule;
 
@@ -54,17 +52,11 @@ async function request<T>(
   const signal = init.signal ? AbortSignal.any([timeout, init.signal]) : timeout;
   const schemas = loadSchemas();
 
-  const headers: Record<string, string> = {};
-  if (init.body !== undefined) headers['Content-Type'] = 'application/json';
-  // The reader's own key, if they saved one, is used for their AI requests.
-  const userKey = readUserKey();
-  if (userKey) headers[USER_KEY_HEADER] = userKey;
-
   let response: Response;
   try {
     response = await fetch(path, {
       method: init.method,
-      headers,
+      headers: init.body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       signal,
       credentials: 'same-origin',

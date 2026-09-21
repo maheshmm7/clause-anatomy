@@ -18,7 +18,6 @@ import { hasMessages, loadMessages } from '../i18n/format';
 import { I18nProvider, useI18n } from '../i18n/I18nProvider';
 import { LEGAL_TITLE_KEYS } from '../i18n/legalPages';
 import type { MessageKey } from '../i18n/messages/en';
-import { useHasUserKey } from '../lib/userKey';
 import { useSettings } from '../settings/SettingsProvider';
 import type { LoadedDocument } from './flow';
 import { parseRoute, readRouteDocId, VIEW_META, writeRoute, type Route } from './navigation';
@@ -106,10 +105,7 @@ function Shell() {
   const [page, setPage] = useState<Page>(() => pageOf(initialRoute));
   const [state, dispatch] = useReducer(workspaceReducer, initialRoute, initialState);
   const [askDraft, setAskDraft] = useState('');
-  const serverAi = useAiAvailability(page.page === 'app');
-  // A reader's own key makes live AI available even when the server has none.
-  const hasUserKey = useHasUserKey();
-  const aiAvailable = hasUserKey ? true : serverAi;
+  const aiAvailable = useAiAvailability(page.page === 'app');
   const doc = activeDoc(state);
   const activeId = state.activeId;
 

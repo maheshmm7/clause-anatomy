@@ -12,20 +12,20 @@ export function createAppFromEnv(
   options: { staticDir?: string } = {},
 ): Express {
   const config = loadConfig(env);
-  const clientFor = (apiKey: string) =>
-    createGeminiClient({
-      apiKey,
-      model: config.geminiModel,
-      fallbackModel: config.geminiFallbackModel,
-      timeoutMs: config.aiTimeoutMs,
-    });
-  const ai = config.geminiApiKey ? clientFor(config.geminiApiKey) : null;
+  const ai = config.geminiApiKey
+    ? createGeminiClient({
+        apiKey: config.geminiApiKey,
+        model: config.geminiModel,
+        fallbackModel: config.geminiFallbackModel,
+        timeoutMs: config.aiTimeoutMs,
+      })
+    : null;
 
   if (!ai) {
     console.warn(
-      '[server] GEMINI_API_KEY is not set: readers can add their own key; examples still work.',
+      '[server] GEMINI_API_KEY is not set: live AI is disabled, built-in examples still work.',
     );
   }
 
-  return createApp({ ai, aiForKey: clientFor, rateLimitMax: config.rateLimitMax, ...options });
+  return createApp({ ai, rateLimitMax: config.rateLimitMax, ...options });
 }

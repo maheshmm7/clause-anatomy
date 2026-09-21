@@ -21,8 +21,6 @@ export interface FakeRoute {
 /** Stubs `fetch` with per-path JSON replies and records every request body. */
 export function stubFetch(routes: Record<string, FakeRoute | FakeRoute[]>) {
   const calls: { path: string; body: unknown }[] = [];
-  /** Request headers, in the same order as `calls`. */
-  const headers: Record<string, string>[] = [];
   const queues = new Map(
     Object.entries(routes).map(([path, reply]) => [
       path,
@@ -33,7 +31,6 @@ export function stubFetch(routes: Record<string, FakeRoute | FakeRoute[]>) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = typeof input === 'string' ? input : input.toString();
     calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : undefined });
-    headers.push({ ...(init?.headers as Record<string, string> | undefined) });
     const entry = queues.get(path);
     const reply = Array.isArray(entry) ? (entry.length > 1 ? entry.shift() : entry[0]) : entry;
     if (!reply)
@@ -46,5 +43,5 @@ export function stubFetch(routes: Record<string, FakeRoute | FakeRoute[]>) {
     });
   });
   vi.stubGlobal('fetch', fetchMock);
-  return { calls, headers, fetchMock };
+  return { calls, fetchMock };
 }

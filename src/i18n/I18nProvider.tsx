@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import type { UiLanguage } from '../../shared/languages';
 import { formatIsoDate, formatMessage, type MessageValues } from './format';
 import type { MessageKey } from './messages/en';
@@ -18,8 +25,9 @@ export function I18nProvider({
   language: UiLanguage;
   children: ReactNode;
 }) {
-  // Screen readers choose pronunciation from the page language.
-  useEffect(() => {
+  // Screen readers choose pronunciation from the page language: set it before the new
+  // text is painted, so it is never read with the previous language for a moment.
+  useLayoutEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
 
