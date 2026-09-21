@@ -129,6 +129,7 @@ export function createGeminiClient(options: GeminiClientOptions): AiClient {
     useSchema: boolean,
     timeoutMs: number,
   ): Promise<T> {
+    const thinkingConfig = thinkingConfigFor(model);
     const response = await sdk.models.generateContent({
       model,
       contents: [{ role: 'user', parts: request.parts }],
@@ -137,7 +138,7 @@ export function createGeminiClient(options: GeminiClientOptions): AiClient {
         temperature: request.temperature,
         responseMimeType: 'application/json',
         ...(useSchema ? { responseJsonSchema: toGeminiJsonSchema(request.schema) } : {}),
-        ...(thinkingConfigFor(model) ? { thinkingConfig: thinkingConfigFor(model) } : {}),
+        ...(thinkingConfig ? { thinkingConfig } : {}),
         abortSignal: AbortSignal.timeout(timeoutMs),
       },
     });

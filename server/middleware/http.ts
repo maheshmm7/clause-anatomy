@@ -57,6 +57,34 @@ export function aiRateLimit(limit: number): RequestHandler {
   });
 }
 
+/**
+ * Refuses state-changing requests sent from other websites (cross-site request forgery
+ * and quota theft through a visitor's browser). Browsers label every such request with
+ * `Origin` and `Sec-Fetch-Site`; requests without them do not come from a web page
+ * and still face validation and the rate limit.
+ */
+export const sameOriginOnly: RequestHandler = (req, _res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    next();
+    return;
+  }
+  const origin = req.get('origin');
+  const host = req.get('x-forwarded-host') ?? req.get('host');
+  let crossSite = req.get('sec-fetch-site') === 'cross-site';
+  if (origin !== undefined) {
+    try {
+      crossSite ||= new URL(origin).host !== host;
+    } catch {
+      crossSite = true; // e.g. "null" from sandboxed frames
+    }
+  }
+  if (crossSite) {
+    next(new HttpError(403, 'forbidden', 'Requests from other websites are not allowed.'));
+    return;
+  }
+  next();
+};
+
 /** Validates `req.body` against a schema and replaces it with the parsed (trimmed) value. */
 export function validateBody<T>(schema: z.ZodType<T>): RequestHandler {
   return (req, _res, next) => {

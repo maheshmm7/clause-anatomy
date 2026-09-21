@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import compression from 'compression';
 import express, { type Express, type Request } from 'express';
 import {
@@ -20,6 +21,7 @@ import {
   noStore,
   notFound,
   permissionsPolicy,
+  sameOriginOnly,
   securityHeaders,
   validateBody,
 } from './middleware/http.js';
@@ -42,6 +44,9 @@ export interface AppOptions {
 /** Body size caps per route: photos need more room than text. */
 const JSON_LIMIT = { text: '512kb', upload: '4.2mb' } as const;
 
+/** Clients kept for readers' own keys; the least recently used is dropped first. */
+const MAX_READER_CLIENTS = 50;
+
 /**
  * Builds the Express application. All dependencies are injected so the exact same
  * app runs in tests (fake AI), local development, a Node server and serverless hosts.
@@ -58,6 +63,7 @@ export function createApp({ ai, aiForKey, rateLimitMax, staticDir, logger }: App
 
   const api = express.Router();
   api.use(noStore);
+  api.use(sameOriginOnly);
 
   api.get('/health', (_req, res) => {
     const body: HealthResult = { status: 'ok', aiAvailable: ai !== null };
@@ -75,13 +81,24 @@ export function createApp({ ai, aiForKey, rateLimitMax, staticDir, logger }: App
    * A reader's own key, when sent, is used for this request only: never stored, never
    * logged, never echoed back. Otherwise the server's key is used.
    */
+  const readerServices = new Map<string, NonNullable<typeof services>>();
   const servicesFor = (req: Pick<Request, 'get'>): NonNullable<typeof services> => {
     const userKey = req.get(USER_KEY_HEADER);
     if (userKey === undefined) return requireAi();
     if (!aiForKey || !GEMINI_KEY_PATTERN.test(userKey)) {
       throw new HttpError(401, 'ai_key_invalid', 'The Gemini API key was not accepted.');
     }
-    return createDocumentServices({ ai: aiForKey(userKey) });
+    // One client per key, reused across requests (kept in memory only, looked up by a
+    // hash of the key, and dropped least-recently-used first).
+    const id = createHash('sha256').update(userKey).digest('base64url');
+    const cached = readerServices.get(id);
+    readerServices.delete(id);
+    const reader = cached ?? createDocumentServices({ ai: aiForKey(userKey) });
+    readerServices.set(id, reader);
+    if (readerServices.size > MAX_READER_CLIENTS) {
+      readerServices.delete(readerServices.keys().next().value as string);
+    }
+    return reader;
   };
   const limiter = aiRateLimit(rateLimitMax);
 

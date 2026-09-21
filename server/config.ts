@@ -39,7 +39,12 @@ export interface ServerConfig {
  * The API key itself is never logged.
  */
 export function loadConfig(env: Record<string, string | undefined>): ServerConfig {
-  const parsed = envSchema.safeParse(env);
+  // Hosting dashboards often create variables with empty values: treat them as unset
+  // so they fall back to safe defaults instead of stopping the server.
+  const present = Object.fromEntries(
+    Object.entries(env).filter(([, value]) => value !== undefined && value.trim() !== ''),
+  );
+  const parsed = envSchema.safeParse(present);
   if (!parsed.success) {
     const details = parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
     throw new Error(`Invalid environment configuration:\n${details.join('\n')}`);

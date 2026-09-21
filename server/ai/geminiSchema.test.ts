@@ -67,6 +67,21 @@ describe('toGeminiJsonSchema', () => {
   });
 });
 
+describe('schema conversion cost', () => {
+  it('converts each schema once and reuses the result on every call', () => {
+    const schema = z.object({ items: z.array(z.string()).max(2) });
+    const first = toGeminiJsonSchema(schema);
+    // Same object, not an equal copy: nothing is rebuilt per request.
+    expect(toGeminiJsonSchema(schema)).toBe(first);
+    expect(toGeminiJsonSchema(analysisSchema)).toBe(toGeminiJsonSchema(analysisSchema));
+    // Different schemas never share a result.
+    expect(toGeminiJsonSchema(z.object({ other: z.string() }))).not.toBe(first);
+    // Reusing the cached conversion still trims replies correctly, every time.
+    expect(fitArraysToSchema({ items: ['a', 'b', 'c'] }, schema)).toEqual({ items: ['a', 'b'] });
+    expect(fitArraysToSchema({ items: ['a', 'b', 'c'] }, schema)).toEqual({ items: ['a', 'b'] });
+  });
+});
+
 describe('fitArraysToSchema', () => {
   const schema = z.object({
     tags: z.array(z.string()).max(2),

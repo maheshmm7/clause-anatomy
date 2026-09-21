@@ -54,6 +54,23 @@ describe('loadConfig', () => {
   it('treats an empty key as missing', () => {
     expect(loadConfig({ GEMINI_API_KEY: '' }).geminiApiKey).toBeNull();
   });
+
+  it('treats empty variables (as hosting dashboards create them) as not set', () => {
+    const config = loadConfig({
+      GEMINI_MODEL: '',
+      GEMINI_FALLBACK_MODEL: ' ',
+      PORT: '',
+      RATE_LIMIT_MAX: '',
+      AI_TIMEOUT_MS: '',
+    });
+    expect(config).toMatchObject({
+      geminiModel: DEFAULT_GEMINI_MODEL,
+      geminiFallbackModel: DEFAULT_GEMINI_FALLBACK_MODEL,
+      port: 8787,
+      rateLimitMax: 30,
+      aiTimeoutMs: 120_000,
+    });
+  });
 });
 
 describe('detectMimeType', () => {
