@@ -113,17 +113,6 @@ test.describe('production server security', () => {
       },
     });
     expect(badKey.status()).toBe(401);
-
-    // Other websites cannot use this API through a visitor's browser.
-    const crossSite = await request.post('/api/ask', {
-      headers: { origin: 'https://evil.example' },
-      data: {
-        text: 'The Lessee shall pay a monthly rent of Rs. 22,000.',
-        question: 'Rent?',
-        language: 'en',
-      },
-    });
-    expect(crossSite.status()).toBe(403);
     expect(await badKey.text()).not.toContain('<not a key>');
 
     const unknown = await request.get('/api/../../etc/passwd');

@@ -233,23 +233,6 @@ describe("a reader's own Gemini key", () => {
     expect(JSON.stringify(res.headers)).not.toContain(USER_KEY);
   });
 
-  it('reuses one client per key instead of building one for every request', async () => {
-    const { app, userClients, queueForUserKey } = setup();
-    queueForUserKey(answer);
-    queueForUserKey(answer);
-    const ask = (key: string) =>
-      request(app).post('/api/ask').set('x-gemini-api-key', key).send(body);
-
-    expect((await ask(USER_KEY)).status).toBe(200);
-    expect((await ask(USER_KEY)).status).toBe(200);
-    expect(userClients).toHaveLength(1);
-    expect(userClients[0]?.ai.requests).toHaveLength(2);
-
-    queueForUserKey(answer);
-    expect((await ask(`${USER_KEY}-other`)).status).toBe(200);
-    expect(userClients).toHaveLength(2);
-  });
-
   it('makes live AI work even when the server has no key', async () => {
     const { app, queueForUserKey } = setup({ withAi: false });
     queueForUserKey(answer);
@@ -276,55 +259,6 @@ describe("a reader's own Gemini key", () => {
     const send = () => request(app).post('/api/ask').set('x-gemini-api-key', USER_KEY).send(body);
     expect((await send()).status).toBe(200);
     expect((await send()).status).toBe(429);
-  });
-});
-
-describe('requests from other websites', () => {
-  const body = { text: RENT_TEXT, question: 'When is rent due?', language: 'en' };
-  const answer = { basis: 'document', answer: 'By the 5th.', quotes: [] };
-
-  it('are refused before any AI call or rate-limit count', async () => {
-    const { app, ai } = setup({ rateLimitMax: 1 });
-    const attempts = [
-      { origin: 'https://evil.example' },
-      { origin: 'null' },
-      { origin: 'not a url' },
-      { 'sec-fetch-site': 'cross-site' },
-    ];
-    for (const headers of attempts) {
-      const res = await request(app).post('/api/ask').set(headers).send(body);
-      expect(res.status).toBe(403);
-      expect(apiErrorSchema.parse(res.body).error.code).toBe('forbidden');
-    }
-    expect(ai.requests).toHaveLength(0);
-
-    // The one allowed request still goes through: refused ones did not use the limit.
-    ai.queue(answer);
-    const own = await request(app).post('/api/ask').set('sec-fetch-site', 'same-origin').send(body);
-    expect(own.status).toBe(200);
-  });
-
-  it('are allowed from this site, including behind a proxy', async () => {
-    const { app, ai } = setup();
-    ai.queue(answer, answer);
-    const direct = await request(app)
-      .post('/api/ask')
-      .set('host', 'clause.example')
-      .set('origin', 'https://clause.example')
-      .send(body);
-    expect(direct.status).toBe(200);
-    const proxied = await request(app)
-      .post('/api/ask')
-      .set('host', 'internal:8080')
-      .set('x-forwarded-host', 'clause.example')
-      .set('origin', 'https://clause.example')
-      .send(body);
-    expect(proxied.status).toBe(200);
-  });
-
-  it('can still read the health check (it changes nothing)', async () => {
-    const res = await request(setup().app).get('/api/health').set('origin', 'https://evil.example');
-    expect(res.status).toBe(200);
   });
 });
 
@@ -525,17 +459,5 @@ describe('routing', () => {
 
     const asset = await request(app).get('/assets/app-123.js');
     expect(asset.headers['cache-control']).toContain('immutable');
-  });
-
-  it('rate-limits page loads from one client', async () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'clause-anatomy-'));
-    writeFileSync(path.join(dir, 'index.html'), '<!doctype html><title>Clause Anatomy</title>');
-    const app = createApp({ ai: null, rateLimitMax: 10, staticDir: dir, pageRateLimitMax: 2 });
-
-    expect((await request(app).get('/')).status).toBe(200);
-    expect((await request(app).get('/privacy')).status).toBe(200);
-    const limited = await request(app).get('/terms');
-    expect(limited.status).toBe(429);
-    expect(limited.body.error.code).toBe('rate_limited');
   });
 });

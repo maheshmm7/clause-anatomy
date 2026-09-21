@@ -138,8 +138,6 @@ export const en = {
   error_ai_bad_response: 'The AI gave an unclear answer. Please try again.',
   error_ai_key_invalid:
     'This Gemini API key was not accepted. Check it in Settings, or add a different key.',
-  error_forbidden:
-    'This request was blocked because it did not come from this site. Reload the page and try again.',
   error_not_found: 'Something was not found. Please try again.',
   error_internal: 'Something went wrong. Please try again.',
   error_network: 'Could not connect. Check your internet and try again.',

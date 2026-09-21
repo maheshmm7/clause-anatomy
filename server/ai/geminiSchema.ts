@@ -58,27 +58,12 @@ function sanitize(node: Json): Json {
   return result;
 }
 
-/**
- * Schemas are fixed module-level objects, so each is converted once and reused by every
- * request (and every retry), instead of being rebuilt on each AI call.
- */
-function memoize(convert: (schema: z.ZodType) => Json): (schema: z.ZodType) => Json {
-  const cache = new WeakMap<z.ZodType, Json>();
-  return (schema) => {
-    let json = cache.get(schema);
-    if (json === undefined) {
-      json = convert(schema);
-      cache.set(schema, json);
-    }
-    return json;
-  };
+const toJsonSchema = (schema: z.ZodType): Json =>
+  z.toJSONSchema(schema, { unrepresentable: 'any' }) as Json;
+
+export function toGeminiJsonSchema(schema: z.ZodType): Json {
+  return sanitize(toJsonSchema(schema));
 }
-
-const toJsonSchema = memoize(
-  (schema) => z.toJSONSchema(schema, { unrepresentable: 'any' }) as Json,
-);
-
-export const toGeminiJsonSchema = memoize((schema) => sanitize(toJsonSchema(schema)));
 
 function fit(value: unknown, node: Json): unknown {
   if (!isObject(node)) return value;
