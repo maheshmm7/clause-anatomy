@@ -85,6 +85,22 @@ export const sameOriginOnly: RequestHandler = (req, _res, next) => {
   next();
 };
 
+/**
+ * Per-IP limit on serving the page shell from disk. Generous (normal browsing never
+ * reaches it) but stops a single client from hammering the file system.
+ */
+export function pageRateLimit(limit: number): RequestHandler {
+  return rateLimit({
+    windowMs: 60 * 1000,
+    limit,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    handler: (_req, _res, next) => {
+      next(new HttpError(429, 'rate_limited', 'Too many requests. Please wait a minute.'));
+    },
+  });
+}
+
 /** Validates `req.body` against a schema and replaces it with the parsed (trimmed) value. */
 export function validateBody<T>(schema: z.ZodType<T>): RequestHandler {
   return (req, _res, next) => {

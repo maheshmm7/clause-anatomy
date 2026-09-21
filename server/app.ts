@@ -20,6 +20,7 @@ import {
   errorHandler,
   noStore,
   notFound,
+  pageRateLimit,
   permissionsPolicy,
   sameOriginOnly,
   securityHeaders,
@@ -38,6 +39,8 @@ export interface AppOptions {
   rateLimitMax: number;
   /** Folder with the built front-end to serve (production only). */
   staticDir?: string;
+  /** Page loads per client IP per minute when serving `staticDir` (default 600). */
+  pageRateLimitMax?: number;
   logger?: Pick<Console, 'error'>;
 }
 
@@ -51,7 +54,14 @@ const MAX_READER_CLIENTS = 50;
  * Builds the Express application. All dependencies are injected so the exact same
  * app runs in tests (fake AI), local development, a Node server and serverless hosts.
  */
-export function createApp({ ai, aiForKey, rateLimitMax, staticDir, logger }: AppOptions): Express {
+export function createApp({
+  ai,
+  aiForKey,
+  rateLimitMax,
+  staticDir,
+  pageRateLimitMax = 600,
+  logger,
+}: AppOptions): Express {
   const app = express();
   app.disable('x-powered-by');
   // Behind one proxy hop (Vercel, Render, Cloud Run…) so rate limiting sees the real client IP.
@@ -159,7 +169,7 @@ export function createApp({ ai, aiForKey, rateLimitMax, staticDir, logger }: App
         },
       }),
     );
-    app.get('/{*path}', (_req, res) => {
+    app.get('/{*path}', pageRateLimit(pageRateLimitMax), (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');
       res.sendFile('index.html', { root: staticDir });
     });

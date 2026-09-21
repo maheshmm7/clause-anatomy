@@ -4,7 +4,7 @@
  * Scans every file tracked by git (or, before the first commit, every file git would add).
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 const PATTERNS = [
   { name: 'Google API key', regex: /AIza[0-9A-Za-z_-]{35}/ },
@@ -28,14 +28,13 @@ for (const file of listFiles()) {
   for (const pattern of PATTERNS) {
     if (pattern.file?.test(file)) findings.push(`${file}: ${pattern.name} must not be committed`);
   }
-  let size = 0;
+  let content;
   try {
-    size = statSync(file).size;
+    content = readFileSync(file, 'utf8');
   } catch {
     continue; // Deleted in the working tree.
   }
-  if (size > 1_000_000) continue;
-  const content = readFileSync(file, 'utf8');
+  if (content.length > 1_000_000) continue;
   for (const pattern of PATTERNS) {
     if (pattern.regex?.test(content)) findings.push(`${file}: possible ${pattern.name}`);
   }

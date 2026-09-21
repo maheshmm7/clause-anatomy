@@ -526,4 +526,16 @@ describe('routing', () => {
     const asset = await request(app).get('/assets/app-123.js');
     expect(asset.headers['cache-control']).toContain('immutable');
   });
+
+  it('rate-limits page loads from one client', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'clause-anatomy-'));
+    writeFileSync(path.join(dir, 'index.html'), '<!doctype html><title>Clause Anatomy</title>');
+    const app = createApp({ ai: null, rateLimitMax: 10, staticDir: dir, pageRateLimitMax: 2 });
+
+    expect((await request(app).get('/')).status).toBe(200);
+    expect((await request(app).get('/privacy')).status).toBe(200);
+    const limited = await request(app).get('/terms');
+    expect(limited.status).toBe(429);
+    expect(limited.body.error.code).toBe('rate_limited');
+  });
 });
